@@ -880,7 +880,9 @@ span{
 }
 
 
-
+ .about-img img{
+        margin-left: 20px;
+    }
 .about{
     flex-direction: column-reverse;
 }
