@@ -163,10 +163,10 @@
 
   /* ------------------------------------------------ Rôles animés (hero) */
   const roles = [
-    "développeur full-stack",
+    "développeur IA (junior)",
+    "développeur Python",
+    "futur Machine Learning Engineer",
     "créateur de TradeVIQ",
-    "futur alternant en IA",
-    "un dev qui livre 🚀",
   ];
   const typedTarget = $("#typed");
 
