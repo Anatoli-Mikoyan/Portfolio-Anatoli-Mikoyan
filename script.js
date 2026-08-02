@@ -74,61 +74,77 @@
     sections.forEach((s) => spy.observe(s));
   }
 
-  /* ------------------------------------------------ Révélation au scroll */
-  const revealer = new IntersectionObserver(
-    (entries, obs) => {
-      entries.forEach((e) => {
-        if (!e.isIntersecting) return;
-        e.target.classList.add("visible");
-        obs.unobserve(e.target);
+  /* --------------------------------- Déclenchement à l'entrée dans l'écran
+
+     IntersectionObserver seul ne suffit pas : ses callbacks sont regroupés par
+     frame, donc un élément qui traverse entièrement l'écran entre deux frames
+     (molette rapide, inertie sur mobile, saut vers une ancre) n'est jamais
+     signalé — et reste figé dans son état initial. C'est ce qui laissait les
+     compteurs à 0 et des sections invisibles.
+
+     On teste donc soi-même la position, à chaque frame de défilement. La
+     condition « le haut de l'élément est passé sous la ligne de déclenchement »
+     est vraie aussi bien à l'entrée par le bas qu'après l'avoir dépassé, donc
+     rien ne peut être manqué, quelle que soit la vitesse. */
+  const whenInView = (elements, activate, offset = 60) => {
+    const pending = new Set(elements);
+    if (!pending.size) return;
+
+    const flush = () => {
+      const line = window.innerHeight - offset;
+      for (const el of pending) {
+        if (el.getBoundingClientRect().top < line) {
+          activate(el);
+          pending.delete(el);
+        }
+      }
+      if (!pending.size) {
+        window.removeEventListener("scroll", schedule);
+        window.removeEventListener("resize", schedule);
+      }
+    };
+
+    let queued = false;
+    const schedule = () => {
+      if (queued) return;
+      queued = true;
+      requestAnimationFrame(() => {
+        queued = false;
+        flush();
       });
-    },
-    { threshold: 0.12, rootMargin: "0px 0px -40px 0px" }
-  );
-  $$(".reveal").forEach((el) => revealer.observe(el));
+    };
+
+    window.addEventListener("scroll", schedule, { passive: true });
+    window.addEventListener("resize", schedule);
+    schedule();
+  };
+
+  /* ------------------------------------------------ Révélation au scroll */
+  whenInView($$(".reveal"), (el) => el.classList.add("visible"), 40);
 
   /* -------------------------------------------------- Barres de compétences */
-  const bars = new IntersectionObserver(
-    (entries, obs) => {
-      entries.forEach((e) => {
-        if (!e.isIntersecting) return;
-        const fill = e.target;
-        fill.style.width = `${fill.dataset.w}%`;
-        obs.unobserve(fill);
-      });
-    },
-    { threshold: 0.4 }
-  );
-  $$(".bar i[data-w]").forEach((el) => bars.observe(el));
+  whenInView($$(".bar i[data-w]"), (el) => {
+    el.style.width = `${el.dataset.w}%`;
+  });
 
-  /* --------------------------------------------------- Compteurs animés */
-  const counters = new IntersectionObserver(
-    (entries, obs) => {
-      entries.forEach((e) => {
-        if (!e.isIntersecting) return;
-        const el = e.target;
-        const target = Number(el.dataset.count) || 0;
-        const suffix = el.dataset.suffix || "";
-        obs.unobserve(el);
+  /* --------------------------------------------------- Compteurs animés
+     La valeur finale est déjà dans le HTML : on ne repart de 0 que le temps
+     de l'animation, jamais avant. */
+  whenInView($$("[data-count]"), (el) => {
+    const target = Number(el.dataset.count) || 0;
+    const suffix = el.dataset.suffix || "";
+    if (reduceMotion) return;
 
-        if (reduceMotion) {
-          el.textContent = target + suffix;
-          return;
-        }
-        const duration = 1100;
-        const start = performance.now();
-        const tick = (now) => {
-          const p = Math.min((now - start) / duration, 1);
-          const eased = 1 - Math.pow(1 - p, 3);
-          el.textContent = Math.round(target * eased) + suffix;
-          if (p < 1) requestAnimationFrame(tick);
-        };
-        requestAnimationFrame(tick);
-      });
-    },
-    { threshold: 0.5 }
-  );
-  $$("[data-count]").forEach((el) => counters.observe(el));
+    const duration = 1100;
+    const start = performance.now();
+    const tick = (now) => {
+      const p = Math.min((now - start) / duration, 1);
+      const eased = 1 - Math.pow(1 - p, 3);
+      el.textContent = Math.round(target * eased) + suffix;
+      if (p < 1) requestAnimationFrame(tick);
+    };
+    requestAnimationFrame(tick);
+  });
 
   /* ---------------------------------------- Halo lumineux sur les cartes */
   if (window.matchMedia("(hover: hover)").matches) {

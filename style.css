@@ -1641,10 +1641,14 @@ h4 {
 .bar i {
   display: block;
   height: 100%;
-  width: 0;
+  /* valeur cible par défaut : la barre est correcte même sans JavaScript */
+  width: var(--w, 0%);
   border-radius: 99px;
   background: var(--grad-soft);
   transition: width 1.15s var(--ease);
+}
+.js .bar i {
+  width: 0;
 }
 .skill:nth-child(even) .bar i {
   background: linear-gradient(90deg, var(--cyan), var(--pink));
@@ -1903,13 +1907,13 @@ h4 {
 }
 
 /* ------------------------------------------------------ 20. Révélation au scroll */
-.reveal {
+.js .reveal {
   opacity: 0;
   transform: translateY(26px);
   transition: opacity 0.75s var(--ease), transform 0.75s var(--ease);
   transition-delay: var(--d, 0ms);
 }
-.reveal.visible {
+.js .reveal.visible {
   opacity: 1;
   transform: none;
 }
@@ -1923,9 +1927,12 @@ h4 {
     transition-duration: 0.01ms !important;
     scroll-behavior: auto !important;
   }
-  .reveal {
+  .js .reveal {
     opacity: 1;
     transform: none;
+  }
+  .js .bar i {
+    width: var(--w, 0%);
   }
 }
 

@@ -37,6 +37,12 @@
   </head>
 
   <body>
+    <script>
+      // Posé avant tout rendu : les états initiaux « invisible » ne s'appliquent
+      // que si JavaScript tourne. Sans JS, la page s'affiche entièrement.
+      document.documentElement.classList.add("js");
+    </script>
+
     <div class="scroll-progress" id="progress"></div>
 
     <!-- décor de fond -->
@@ -260,19 +266,19 @@
       <section style="padding-top: 0">
         <div class="wrap stats">
           <div class="card stat reveal">
-            <div class="num" data-count="1" data-suffix="">0</div>
+            <div class="num" data-count="1" data-suffix="">1</div>
             <div class="label">SaaS conçu et mis en production</div>
           </div>
           <div class="card stat reveal" style="--d: 80ms">
-            <div class="num" data-count="8" data-suffix="+">0</div>
+            <div class="num" data-count="8" data-suffix="+">8+</div>
             <div class="label">Projets &amp; labs documentés</div>
           </div>
           <div class="card stat reveal" style="--d: 160ms">
-            <div class="num" data-count="6" data-suffix="">0</div>
+            <div class="num" data-count="6" data-suffix="">6</div>
             <div class="label">Certifications obtenues</div>
           </div>
           <div class="card stat reveal" style="--d: 240ms">
-            <div class="num" data-count="3" data-suffix="">0</div>
+            <div class="num" data-count="3" data-suffix="">3</div>
             <div class="label">Expériences en entreprise</div>
           </div>
         </div>
@@ -491,7 +497,7 @@
                     <li>Méthode agile : daily, backlog, recette client</li>
                   </ul>
                   <div class="chip-row">
-                    <a class="chip" href="RAPPORT DE STAGE 2Eme ANNE.pdf" target="_blank" rel="noopener"
+                    <a class="chip" href="rapport-stage-2eme-annee.pdf" target="_blank" rel="noopener"
                       ><i class="bx bxs-file-pdf"></i> Rapport de stage</a
                     >
                   </div>
@@ -508,7 +514,7 @@
                     <li>Gestion de version Git, échanges directs avec le client</li>
                   </ul>
                   <div class="chip-row">
-                    <a class="chip" href="RAPPORT DE STAGE 1ER ANNE.pdf" target="_blank" rel="noopener"
+                    <a class="chip" href="rapport-stage-1ere-annee.pdf" target="_blank" rel="noopener"
                       ><i class="bx bxs-file-pdf"></i> Rapport de stage</a
                     >
                   </div>
@@ -631,7 +637,7 @@
                   <a class="plink" href="https://fba.tomorrow-spring.org/index.html" target="_blank" rel="noopener"
                     >Voir le site <i class="bx bx-right-arrow-alt"></i
                   ></a>
-                  <a class="plink" href="RAPPORT DE STAGE 2Eme ANNE.pdf" target="_blank" rel="noopener"
+                  <a class="plink" href="rapport-stage-2eme-annee.pdf" target="_blank" rel="noopener"
                     >Rapport <i class="bx bxs-file-pdf"></i
                   ></a>
                 </div>
@@ -661,7 +667,7 @@
                   <a class="plink" href="https://www.tomorrow-spring.org/" target="_blank" rel="noopener"
                     >Voir le site <i class="bx bx-right-arrow-alt"></i
                   ></a>
-                  <a class="plink" href="RAPPORT DE STAGE 1ER ANNE.pdf" target="_blank" rel="noopener"
+                  <a class="plink" href="rapport-stage-1ere-annee.pdf" target="_blank" rel="noopener"
                     >Rapport <i class="bx bxs-file-pdf"></i
                   ></a>
                 </div>
@@ -716,7 +722,7 @@
                     rel="noopener"
                     >Code source <i class="bx bxl-github"></i
                   ></a>
-                  <a class="plink" href="cdc-technique-Anatoli-mikoyan (1).pdf" target="_blank" rel="noopener"
+                  <a class="plink" href="cahier-des-charges-cartes-grises.pdf" target="_blank" rel="noopener"
                     >Cahier des charges <i class="bx bxs-file-pdf"></i
                   ></a>
                 </div>
@@ -739,7 +745,7 @@
                   ><span class="chip">Rédaction</span>
                 </div>
                 <div class="project-links">
-                  <a class="plink" href="tuto-reseaux/mallet.pdf" target="_blank" rel="noopener"
+                  <a class="plink" href="tuto-reseaux/audit-securite-mallet.pdf" target="_blank" rel="noopener"
                     >Lire le rapport <i class="bx bxs-file-pdf"></i
                   ></a>
                 </div>
@@ -762,7 +768,7 @@
                   ><span class="chip">WordPress</span>
                 </div>
                 <div class="project-links">
-                  <a class="plink" href="tuto-reseaux/Compte rendu DebianMDF.pdf" target="_blank" rel="noopener"
+                  <a class="plink" href="tuto-reseaux/serveur-lamp-debian.pdf" target="_blank" rel="noopener"
                     >Documentation <i class="bx bxs-file-pdf"></i
                   ></a>
                 </div>
@@ -778,22 +784,22 @@
             </p>
           </div>
           <div class="labs">
-            <a class="lab reveal" href="tuto-reseaux/Installation de Debian 12 sur VMware.pdf" target="_blank" rel="noopener">
+            <a class="lab reveal" href="tuto-reseaux/debian-12-vmware.pdf" target="_blank" rel="noopener">
               <i class="bx bxl-tux ico"></i>
               <span><b>Debian 12 sur VMware Workstation</b><small>Installation pas à pas</small></span>
               <i class="bx bx-link-external arrow"></i>
             </a>
-            <a class="lab reveal" href="tuto-reseaux/Ossant_Mikoyan_proxmox copie.pdf" target="_blank" rel="noopener" style="--d: 60ms">
+            <a class="lab reveal" href="tuto-reseaux/proxmox.pdf" target="_blank" rel="noopener" style="--d: 60ms">
               <i class="bx bx-server ico"></i>
               <span><b>Virtualisation avec Proxmox</b><small>Présentation &amp; mise en œuvre</small></span>
               <i class="bx bx-link-external arrow"></i>
             </a>
-            <a class="lab reveal" href="tuto-reseaux/Document technique centreon.pdf" target="_blank" rel="noopener" style="--d: 120ms">
+            <a class="lab reveal" href="tuto-reseaux/supervision-centreon.pdf" target="_blank" rel="noopener" style="--d: 120ms">
               <i class="bx bx-line-chart ico"></i>
               <span><b>Supervision avec Centreon</b><small>Documentation technique</small></span>
               <i class="bx bx-link-external arrow"></i>
             </a>
-            <a class="lab reveal" href="tuto-reseaux/Compte_rendu_Wordpress.pdf" target="_blank" rel="noopener" style="--d: 180ms">
+            <a class="lab reveal" href="tuto-reseaux/cms-wordpress.pdf" target="_blank" rel="noopener" style="--d: 180ms">
               <i class="bx bxl-wordpress ico"></i>
               <span><b>Déploiement d'un CMS WordPress</b><small>Sur serveur LAMP</small></span>
               <i class="bx bx-link-external arrow"></i>
@@ -825,27 +831,27 @@
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Python (services, scripts, données)</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="55"></i></div>
+                <div class="bar"><i data-w="55" style="--w: 55%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Intégration d'API LLM dans un produit</span><span class="skill-lvl">Avancé</span></div>
-                <div class="bar"><i data-w="76"></i></div>
+                <div class="bar"><i data-w="76" style="--w: 76%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Prompt engineering &amp; garde-fous</span><span class="skill-lvl">Avancé</span></div>
-                <div class="bar"><i data-w="78"></i></div>
+                <div class="bar"><i data-w="78" style="--w: 78%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Assistants de code (Claude, Copilot)</span><span class="skill-lvl">Avancé</span></div>
-                <div class="bar"><i data-w="82"></i></div>
+                <div class="bar"><i data-w="82" style="--w: 82%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Analyse de données &amp; métriques</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="58"></i></div>
+                <div class="bar"><i data-w="58" style="--w: 58%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Machine learning</span><span class="skill-lvl">En cours — ETNA 2026</span></div>
-                <div class="bar"><i data-w="32"></i></div>
+                <div class="bar"><i data-w="32" style="--w: 32%"></i></div>
               </div>
             </article>
 
@@ -858,23 +864,23 @@
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Java</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="52"></i></div>
+                <div class="bar"><i data-w="52" style="--w: 52%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">JavaScript / TypeScript</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="50"></i></div>
+                <div class="bar"><i data-w="50" style="--w: 50%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">SQL</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="55"></i></div>
+                <div class="bar"><i data-w="55" style="--w: 55%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">PHP</span><span class="skill-lvl">Débutant</span></div>
-                <div class="bar"><i data-w="38"></i></div>
+                <div class="bar"><i data-w="38" style="--w: 38%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">HTML &amp; CSS</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="60"></i></div>
+                <div class="bar"><i data-w="60" style="--w: 60%"></i></div>
               </div>
             </article>
 
@@ -887,23 +893,23 @@
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Spring Boot (REST, JPA, Security)</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="52"></i></div>
+                <div class="bar"><i data-w="52" style="--w: 52%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">PostgreSQL / MySQL</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="52"></i></div>
+                <div class="bar"><i data-w="52" style="--w: 52%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">API REST &amp; intégrations tierces</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="55"></i></div>
+                <div class="bar"><i data-w="55" style="--w: 55%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Authentification JWT &amp; sécurité</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="45"></i></div>
+                <div class="bar"><i data-w="45" style="--w: 45%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Docker &amp; déploiement</span><span class="skill-lvl">Débutant</span></div>
-                <div class="bar"><i data-w="38"></i></div>
+                <div class="bar"><i data-w="38" style="--w: 38%"></i></div>
               </div>
             </article>
 
@@ -916,23 +922,23 @@
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">React 19</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="52"></i></div>
+                <div class="bar"><i data-w="52" style="--w: 52%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">TypeScript &amp; hooks</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="48"></i></div>
+                <div class="bar"><i data-w="48" style="--w: 48%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Tailwind CSS &amp; responsive</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="55"></i></div>
+                <div class="bar"><i data-w="55" style="--w: 55%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Dataviz (Recharts, charts financiers)</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="45"></i></div>
+                <div class="bar"><i data-w="45" style="--w: 45%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">SEO &amp; accessibilité</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="48"></i></div>
+                <div class="bar"><i data-w="48" style="--w: 48%"></i></div>
               </div>
             </article>
 
@@ -945,19 +951,19 @@
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Git / GitHub</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="58"></i></div>
+                <div class="bar"><i data-w="58" style="--w: 58%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Linux / Debian</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="48"></i></div>
+                <div class="bar"><i data-w="48" style="--w: 48%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Virtualisation (VMware, Proxmox)</span><span class="skill-lvl">Notions</span></div>
-                <div class="bar"><i data-w="36"></i></div>
+                <div class="bar"><i data-w="36" style="--w: 36%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Supervision (Centreon)</span><span class="skill-lvl">Notions</span></div>
-                <div class="bar"><i data-w="30"></i></div>
+                <div class="bar"><i data-w="30" style="--w: 30%"></i></div>
               </div>
             </article>
 
@@ -970,19 +976,19 @@
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Agile / Scrum (daily, backlog, recette)</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="55"></i></div>
+                <div class="bar"><i data-w="55" style="--w: 55%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Gestion de projet &amp; cahier des charges</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="55"></i></div>
+                <div class="bar"><i data-w="55" style="--w: 55%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">Conception de bases de données</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="55"></i></div>
+                <div class="bar"><i data-w="55" style="--w: 55%"></i></div>
               </div>
               <div class="skill">
                 <div class="skill-top"><span class="skill-name">RGPD &amp; données personnelles</span><span class="skill-lvl">Intermédiaire</span></div>
-                <div class="bar"><i data-w="45"></i></div>
+                <div class="bar"><i data-w="45" style="--w: 45%"></i></div>
               </div>
             </article>
           </div>
@@ -992,32 +998,32 @@
             <h3 style="font-size: 1.35rem">Certifications</h3>
           </div>
           <div class="certs">
-            <a class="card cert reveal" href="Certifications/Certification-mooc-anssi.pdf" target="_blank" rel="noopener">
+            <a class="card cert reveal" href="Certifications/certification-mooc-anssi.pdf" target="_blank" rel="noopener">
               <span class="cert-ico i-cyan"><i class="bx bx-shield-alt-2"></i></span>
               <span><b>MOOC SecNumAcadémie</b><small>ANSSI · Cybersécurité</small></span>
               <i class="bx bx-link-external"></i>
             </a>
-            <a class="card cert reveal" href="Certifications/Certification-HTML-CSS-JS.jpeg" target="_blank" rel="noopener" style="--d: 60ms">
+            <a class="card cert reveal" href="Certifications/certification-html-css-js.jpeg" target="_blank" rel="noopener" style="--d: 60ms">
               <span class="cert-ico i-violet"><i class="bx bx-code-alt"></i></span>
               <span><b>HTML · CSS · JavaScript</b><small>Développement web</small></span>
               <i class="bx bx-link-external"></i>
             </a>
-            <a class="card cert reveal" href="Certifications/certification sql.pdf" target="_blank" rel="noopener" style="--d: 120ms">
+            <a class="card cert reveal" href="Certifications/certification-sql.pdf" target="_blank" rel="noopener" style="--d: 120ms">
               <span class="cert-ico i-lime"><i class="bx bx-data"></i></span>
               <span><b>SQL</b><small>Bases de données relationnelles</small></span>
               <i class="bx bx-link-external"></i>
             </a>
-            <a class="card cert reveal" href="Certifications/Introduction_to_Cybersecurity_certificate_anatoli-mikoyan95-gmail-com_0c92d718-b2ba-4a60-b871-56dfa9d7992b.pdf" target="_blank" rel="noopener" style="--d: 180ms">
+            <a class="card cert reveal" href="Certifications/certification-intro-cybersecurity.pdf" target="_blank" rel="noopener" style="--d: 180ms">
               <span class="cert-ico i-pink"><i class="bx bx-lock-alt"></i></span>
               <span><b>Introduction to Cybersecurity</b><small>Cisco Networking Academy</small></span>
               <i class="bx bx-link-external"></i>
             </a>
-            <a class="card cert reveal" href="Certifications/Cybersecurity_Essentials_certificate_anatoli-mikoyan95-gmail-com_3fda5f00-403a-4e32-8528-a3a97eca2914.pdf" target="_blank" rel="noopener" style="--d: 240ms">
+            <a class="card cert reveal" href="Certifications/certification-cybersecurity-essentials.pdf" target="_blank" rel="noopener" style="--d: 240ms">
               <span class="cert-ico i-amber"><i class="bx bx-bug"></i></span>
               <span><b>Cybersecurity Essentials</b><small>Cisco Networking Academy</small></span>
               <i class="bx bx-link-external"></i>
             </a>
-            <a class="card cert reveal" href="Certifications/cloud aws certif.pdf" target="_blank" rel="noopener" style="--d: 300ms">
+            <a class="card cert reveal" href="Certifications/certification-cloud-aws.pdf" target="_blank" rel="noopener" style="--d: 300ms">
               <span class="cert-ico i-green"><i class="bx bx-cloud"></i></span>
               <span><b>Cloud Computing</b><small>Fondamentaux AWS</small></span>
               <i class="bx bx-link-external"></i>
