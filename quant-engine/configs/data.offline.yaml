@@ -1,0 +1,32 @@
+# Variante hors ligne : source synthetique deterministe.
+# Sert a faire tourner l'exemple du README et le CI sans acces reseau.
+
+data:
+  provider: synthetic
+  calendar: XNYS
+  frequency: 1d
+  adjustment: split_pit
+
+  cache:
+    enabled: false
+
+  synthetic:
+    seed: 20240101
+    start_price: 100.0
+    annual_drift: 0.08
+    annual_volatility: 0.20
+    # Operations sur titre injectees, au format "AAAA-MM-JJ:valeur".
+    # Le split de 2021 rend visible la difference entre ajustement
+    # point-in-time et retro-ajustement dans examples/step1_data.py.
+    splits:
+      - "2021-06-15:4.0"
+    dividends:
+      - "2020-03-20:0.55"
+      - "2021-03-19:0.60"
+      - "2022-03-18:0.65"
+
+  normalization:
+    raise_on_blocking: true
+
+  quality:
+    min_bars: 252

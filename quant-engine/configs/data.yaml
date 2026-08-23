@@ -1,0 +1,59 @@
+# Configuration de la couche donnees.
+#
+# Aucun de ces parametres n'a d'equivalent code en dur : deux backtests ne
+# peuvent pas diverger a cause d'un reglage oublie dans un module.
+
+data:
+  # yfinance | csv | synthetic
+  provider: yfinance
+  calendar: XNYS
+  frequency: 1d
+
+  # Politique d'ajustement des prix.
+  #   raw               : aucun ajustement, discontinuites de split visibles
+  #   split_pit         : splits seuls, normalises au curseur  <-- DEFAUT
+  #   total_return_pit  : splits + dividendes, normalises au curseur
+  #   full_retro_split  : retro-ajustement classique -- LOOK-AHEAD
+  #   full_retro_total  : equivalent "Adj Close" yfinance -- LOOK-AHEAD
+  #
+  # Les deux dernieres recalculent tout l'historique avec des operations sur
+  # titre posterieures a chaque barre. Le moteur refuse de les appliquer sans
+  # opt-in explicite : elles ne servent qu'a reconcilier des chiffres avec un
+  # outil tiers, jamais a evaluer une strategie.
+  adjustment: split_pit
+
+  cache:
+    enabled: true
+    root: ${QE_CACHE_ROOT:-.cache/market}
+    ttl_hours: 24
+    # Fenetre recente toujours rechargee : les dernieres barres sont celles que
+    # les sources corrigent le plus souvent a posteriori.
+    refresh_tail_days: 5
+
+  normalization:
+    on_duplicate: last            # last | first | fail
+    on_nan: drop                  # drop | fail | ffill
+    on_incoherent_ohlc: fail      # drop | fail | ffill
+    drop_zero_volume: false
+    # Une barre du jour en cours est partielle : son high, son low et son close
+    # bougeront encore. La backtester revient a connaitre la fin de la seance.
+    drop_incomplete_last_bar: true
+    allow_preadjusted: false
+    raise_on_blocking: true
+
+  quality:
+    jump_sigma: 8.0                  # seuil de saut, en ecarts-types robustes (MAD)
+    jump_floor: 0.20                 # plancher absolu, en log-rendement
+    stale_run_length: 3
+    min_bars: 252                    # en dessous : echantillon signale comme trop court
+    max_missing_session_ratio: 0.02  # au dela : seances manquantes bloquantes
+    check_sessions: true
+
+  yfinance:
+    exchange_timezone: America/New_York
+
+  # csv:
+  #   root: ./data_local
+  #   timezone: America/New_York
+  #   bar_label: session_date       # session_date | open | close
+  #   filename_template: "{symbol}_{frequency}.csv"

@@ -1,0 +1,95 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "quant-engine"
+version = "0.1.0"
+description = "Moteur de backtesting et d'execution algorithmique concu pour invalider les strategies, pas pour les flatter."
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Anatoli Mikoyan" }]
+dependencies = [
+    "numpy>=1.26",
+    "pandas>=2.1",
+    "pyarrow>=14.0",
+    "PyYAML>=6.0",
+]
+
+[project.optional-dependencies]
+yfinance = ["yfinance>=0.2.40"]
+reporting = ["jinja2>=3.1", "plotly>=5.20"]
+ibkr = ["ib-async>=1.0"]
+dev = [
+    "pytest>=8.0",
+    "pytest-cov>=5.0",
+    "mypy>=1.10",
+    "pandas-stubs>=2.1",
+    "types-PyYAML>=6.0",
+    "ruff>=0.5",
+]
+
+[tool.setuptools.packages.find]
+where = ["src"]
+
+[tool.setuptools.package-data]
+quant_engine = ["py.typed"]
+
+# ---------------------------------------------------------------------------
+# mypy : mode strict, sans exception pour le code du projet.
+# ---------------------------------------------------------------------------
+[tool.mypy]
+python_version = "3.11"
+strict = true
+warn_unreachable = true
+warn_unused_ignores = true
+disallow_any_generics = true
+disallow_untyped_decorators = true
+no_implicit_reexport = true
+show_error_codes = true
+pretty = true
+files = ["src", "tests"]
+
+[[tool.mypy.overrides]]
+# yfinance et ib_async n'expedient pas de stubs. Les imports sont isoles
+# dans un seul module adaptateur chacun, jamais dans le coeur du moteur.
+module = ["yfinance.*", "ib_async.*", "ib_insync.*"]
+ignore_missing_imports = true
+
+# ---------------------------------------------------------------------------
+# pytest
+# ---------------------------------------------------------------------------
+[tool.pytest.ini_options]
+minversion = "8.0"
+testpaths = ["tests"]
+pythonpath = ["src"]
+addopts = "-ra --strict-markers --strict-config -m 'not network'"
+markers = [
+    "slow: test lent (exclu par defaut en pre-commit)",
+    "network: necessite un acces reseau reel (exclu du CI)",
+]
+filterwarnings = ["error::DeprecationWarning:quant_engine.*"]
+
+[tool.coverage.run]
+branch = true
+source = ["quant_engine"]
+
+[tool.coverage.report]
+exclude_also = [
+    "if TYPE_CHECKING:",
+    "raise NotImplementedError",
+    "@overload",
+    "\\.\\.\\.",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "N", "UP", "B", "A", "C4", "SIM", "RET", "ARG", "PTH", "RUF"]
+ignore = ["A003"]
+
+[tool.ruff.lint.per-file-ignores]
+"tests/*" = ["ARG001", "ARG002"]

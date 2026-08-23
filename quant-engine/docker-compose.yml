@@ -1,0 +1,36 @@
+services:
+  # Environnement de travail : shell interactif avec le code monte en volume.
+  quant:
+    build:
+      context: .
+      target: base
+    image: quant-engine:dev
+    volumes:
+      - .:/app
+      - market-cache:/app/.cache
+    environment:
+      QE_CACHE_ROOT: /app/.cache/market
+      PYTHONPATH: /app/src
+    stdin_open: true
+    tty: true
+    command: bash
+
+  # Exemple reproductible de bout en bout, hors ligne.
+  example:
+    extends:
+      service: quant
+    command: python examples/step1_data.py
+
+  # Chaine de verification complete : lint, typage strict, tests, couverture.
+  ci:
+    build:
+      context: .
+      target: ci
+    image: quant-engine:ci
+    volumes:
+      - .:/app
+    environment:
+      PYTHONPATH: /app/src
+
+volumes:
+  market-cache:

@@ -1,0 +1,30 @@
+name: quant-engine
+
+on:
+  push:
+    paths: ["quant-engine/**", ".github/workflows/quant-engine.yml"]
+  pull_request:
+    paths: ["quant-engine/**", ".github/workflows/quant-engine.yml"]
+
+defaults:
+  run:
+    working-directory: quant-engine
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+      - run: pip install -e ".[dev]"
+      - name: Lint
+        run: ruff check .
+      - name: Typage strict
+        run: mypy
+      - name: Tests et couverture
+        run: pytest -q --cov=quant_engine --cov-report=term-missing --cov-fail-under=85
+      - name: Exemple reproductible
+        run: python examples/step1_data.py
