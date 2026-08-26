@@ -160,3 +160,65 @@ def test_live_features_match_backtest_features(trained):
 
     assert live.shape == batch.shape
     assert np.abs(live - batch).max() < 1e-4, "écart entraînement/service dans les features"
+
+
+def test_live_portfolio_state_matches_environment(trained):
+    """Parité de l'ÉTAT DE PORTEFEUILLE entre l'environnement et le moteur live.
+
+    Les six composantes doivent coïncider composante par composante. Un moteur live qui
+    remplirait l'une d'elles de zéros « faute de mieux » placerait le modèle hors de la
+    distribution d'entraînement — sans erreur visible, et avec une dégradation
+    silencieuse des décisions.
+    """
+    from qbot.env import N_PORTFOLIO_FEATURES, make_env_from_frames
+    from qbot.features import align_features_prices
+    from qbot.live.engine import InferenceEngine, load_bundle
+
+    model_dir, df = trained
+    bundle = load_bundle(model_dir)
+    engine = InferenceEngine(bundle, dry_run=True)
+
+    feats = bundle.pipeline.transform(df)
+    xa, pa = align_features_prices(feats, df)
+    env = make_env_from_frames(xa, pa, bundle.config.env, bundle.config.costs, 6240.0)
+
+    obs = env.reset(start=env.max_start, full=True)
+    rng = np.random.default_rng(0)
+    grid = bundle.positions
+
+    env_states, live_states = [], []
+    for _ in range(140):
+        action = int(rng.integers(0, env.n_actions))
+        obs, _, done, _ = env.step(action)
+        if done:
+            break
+        env_states.append(obs[-N_PORTFOLIO_FEATURES:].copy())
+
+        bar_vol = float(env.bar_vol[env.t])
+        window_df = pa.iloc[max(env.t - 400, 0): env.t + 1].copy()
+        window_df["spread"] = 0.0
+        live_states.append(engine._portfolio_state(
+            {
+                "current_exposure": float(env.position),
+                "equity": float(env.equity),
+                "peak_equity": float(env.peak_equity),
+                "bars_in_position": int(env.bars_in_position),
+                "entry_price": float(env.entry_price),
+            },
+            window_df, bar_vol,
+        ))
+
+    # Les 70 premières barres sont écartées : au démarrage, le serveur ne connaît pas
+    # l'équité ANTÉRIEURE à sa première requête, il lui manque donc un rendement dans la
+    # fenêtre glissante de 60. Cet écart de démarrage disparaît mécaniquement dès que la
+    # fenêtre est entièrement remplie par des observations vues en ligne.
+    warmup = 70
+    a = np.asarray(env_states)[warmup:]
+    b = np.asarray(live_states)[warmup:]
+    assert a.shape == b.shape and a.shape[0] > 40
+    names = ["exposition", "drawdown", "ancienneté", "P&L latent", "vol relative", "turnover"]
+    for i, name in enumerate(names):
+        assert np.abs(a[:, i] - b[:, i]).max() < 1e-4, (
+            f"composante {i} ({name}) diverge : "
+            f"env={a[:3, i]} vs live={b[:3, i]}"
+        )

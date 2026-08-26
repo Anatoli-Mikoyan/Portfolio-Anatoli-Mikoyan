@@ -158,7 +158,76 @@ L'agent est donc structurellement incité à la régularité.
 
 ---
 
-## 6. Le protocole de validation
+## 6. Capacité du modèle : le piège le plus contre-intuitif
+
+Ce point mérite sa propre section parce qu'il contredit frontalement l'intuition acquise
+en apprentissage profond « classique », où plus de paramètres et plus d'époques donnent
+presque toujours de meilleurs résultats.
+
+### Une mesure faite sur ce dépôt
+
+Sonde supervisée (`scripts/probe.py`) sur un marché synthétique dont le signal est connu
+par construction — autocorrélation lag-1 de +0.25, soit un R² théorique de 0.06 :
+
+| Pas d'entraînement | IC out-of-sample |
+|---|---|
+| 2 000 | **+0.109** |
+| 6 000 | +0.038 |
+| 20 000 | **−0.003** |
+| 50 000 | −0.004 |
+
+La performance **décroît avec l'entraînement**. Le réseau (128×128, ~100 000 paramètres)
+mémorise le bruit de 11 600 observations bien avant d'avoir épuisé le signal. Pendant ce
+temps, une simple régression linéaire sur les mêmes features atteint un IC de **+0.216**
+et un Sharpe out-of-sample de **+9.5**, coûts inclus.
+
+La régularisation change complètement la conclusion. À 20 000 pas, fenêtre de 16 barres :
+
+| `weight_decay` | IC out-of-sample | Précision du signe |
+|---|---|---|
+| 0 | −0.003 | 0.504 |
+| 1e-4 | +0.070 | 0.506 |
+| **1e-3** | **+0.179** | **0.568** |
+| *référence linéaire* | *+0.216* | *0.579* |
+
+Autrement dit : correctement régularisé, le réseau retrouve l'essentiel de ce qu'une
+simple régression linéaire obtenait d'emblée. Ce n'est pas un réglage cosmétique — c'est
+la différence entre un modèle inutilisable et un modèle exploitable. C'est aussi un
+rappel utile : sur ce type de données, battre le linéaire demande beaucoup de travail
+pour un gain modeste.
+
+Élargir la fenêtre d'observation n'aide pas non plus : de 1 à 32 barres, l'IC reste dans
+la même plage médiocre. Les features encodent déjà l'historique (rendements à 2, 5, 20
+barres, EMA, volatilités) ; empiler des copies décalées ne fait qu'augmenter la dimension
+d'entrée, donc la capacité à mémoriser.
+
+### Pourquoi c'est structurel, pas anecdotique
+
+Le nombre d'observations nécessaires pour estimer un coefficient à un rapport
+signal/bruit donné croît comme l'inverse du carré de ce rapport. Avec un R² de 0.06, il
+faut des ordres de grandeur plus de données qu'en vision ou en langage pour le même
+nombre de paramètres. Un réseau de 100 000 paramètres sur 12 000 barres est dans un
+régime où la mémorisation est strictement plus facile que la généralisation.
+
+### Ce qu'il faut en tirer
+
+1. **Commencer petit.** Un modèle linéaire est la bonne référence, pas un point de départ
+   à dépasser d'office. S'il n'est pas battu, le modèle complexe n'apporte rien.
+2. **Lancer `scripts/probe.py` AVANT tout entraînement RL.** Il répond en quelques
+   secondes à ce qu'un run RL de plusieurs heures laisse indécidable : y a-t-il du signal,
+   et l'architecture peut-elle l'extraire ?
+3. **Surveiller l'écart IC train / IC test**, pas seulement l'IC test. Un écart élevé
+   signale une capacité excédentaire — le remède est de réduire le modèle, pas de
+   l'entraîner davantage.
+4. **L'arrêt anticipé sur validation n'est pas une option.** C'est ce qui empêche le
+   modèle de dépasser son point optimal, qui arrive beaucoup plus tôt qu'on ne le croit.
+
+Les valeurs par défaut de ce dépôt reflètent cette contrainte : réseaux volontairement
+petits, `weight_decay` non nul, évaluation fréquente et patience courte.
+
+---
+
+## 7. Le protocole de validation
 
 ```
    Données complètes
@@ -192,7 +261,7 @@ faux positif (déployer une stratégie perdante) dépasse largement celui d'un f
 
 ---
 
-## 7. Ce que ce système ne fait pas
+## 8. Ce que ce système ne fait pas
 
 Une liste honnête vaut mieux qu'une promesse.
 
@@ -208,7 +277,7 @@ Une liste honnête vaut mieux qu'une promesse.
 - **Il ne remplace pas l'exécution.** Slippage réel, requotes, gaps de week-end et
   élargissements de spread sur annonce sont approximés, pas reproduits.
 
-## 8. Les erreurs qui coûtent le plus cher
+## 9. Les erreurs qui coûtent le plus cher
 
 1. **Regarder le test plus d'une fois.** Chaque consultation le transforme en jeu de
    validation, et le chiffre rapporté devient un estimateur biaisé.
@@ -216,7 +285,7 @@ Une liste honnête vaut mieux qu'une promesse.
    est honnête. Compter *toutes* les variantes, y compris celles abandonnées.
 3. **Optimiser les coûts vers le bas** pour « voir ce que ça donne ». Ça donne toujours
    un meilleur résultat, et toujours faux.
-4. **Passer en réel après un seul backtest réussi.** Le protocole de la section 5 du
+4. **Passer en réel après un seul backtest réussi.** Le protocole de mise en production du
    document d'intégration existe pour cette raison.
 5. **Augmenter la taille après une bonne série.** L'impact croît en racine de la taille ;
    la capacité se mesure, elle ne se suppose pas.

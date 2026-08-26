@@ -141,7 +141,11 @@ class RainbowAgent:
         if not greedy and not self.noisy and self.rng.random() < self.epsilon():
             return int(self.rng.integers(0, self.n_actions))
 
-        self.online.eval() if greedy else self.online.train()
+        # Le réseau reste en mode eval pour CHOISIR une action : le dropout est un
+        # régularisateur de l'apprentissage, pas une source d'exploration. L'exploration
+        # vient exclusivement de NoisyNet, réactivé explicitement ci-dessous.
+        self.online.eval()
+        self.online.set_noise(False if greedy else (True if self.noisy else False))
         if self.noisy and not greedy:
             self.online.reset_noise()
         x = torch.as_tensor(np.asarray(obs, dtype=np.float32), device=self.device).unsqueeze(0)
@@ -153,6 +157,7 @@ class RainbowAgent:
     def act_batch(self, obs: np.ndarray, cvar_alpha: Optional[float] = None) -> np.ndarray:
         """Inférence vectorisée — utilisée par le backtest pour éviter T appels réseau."""
         self.online.eval()
+        self.online.set_noise(False)
         x = torch.as_tensor(np.asarray(obs, dtype=np.float32), device=self.device)
         scores = (self.online.risk_measure(x, cvar_alpha) if cvar_alpha
                   else self.online.q_values(x))
@@ -214,6 +219,7 @@ class RainbowAgent:
         gamma_n = self.gamma ** n_steps
 
         self.online.train()
+        self.online.set_noise(None)          # le bruit suit à nouveau le mode du module
         if self.noisy:
             self.online.reset_noise()
             self.target.reset_noise()

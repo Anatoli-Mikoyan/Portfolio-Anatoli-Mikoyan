@@ -73,7 +73,9 @@ class CostConfig:
 
 @dataclass
 class EnvConfig:
-    window: int = 64                     # nombre de barres dans l'observation
+    window: int = 32                     # nombre de barres dans l'observation ; élargir
+                                         # multiplie la dimension d'entrée sans apporter
+                                         # d'information (les features encodent déjà l'historique)
     positions: Tuple[float, ...] = (-1.0, -0.5, 0.0, 0.5, 1.0)   # espace d'actions discret
     execution: str = "close"             # "close" (rebalance à la clôture) | "next_open"
     reward: str = "dsr"                  # "pnl" | "log_pnl" | "dsr" | "vol_scaled" | "dd_penalized"
@@ -96,9 +98,14 @@ class EnvConfig:
 # --------------------------------------------------------------------------------------
 @dataclass
 class AgentConfig:
+    # Capacité volontairement FAIBLE. Mesure faite sur ce dépôt (scripts/probe.py, marché
+    # synthétique à R² connu de 0.06) : un réseau 128x128 passe d'un IC out-of-sample de
+    # +0.109 à 2 000 pas, à +0.038 à 6 000 pas, puis -0.003 à 20 000 pas. Il mémorise le
+    # bruit bien avant d'épuiser le signal. Sur des données financières, la capacité est
+    # une contrainte, pas une ressource : voir docs/METHODOLOGIE.md §6.
     algo: str = "rainbow"                # "rainbow" | "dqn" (rainbow = toutes les extensions)
     encoder: str = "mlp"                 # "mlp" | "gru" | "tcn"
-    hidden_sizes: Tuple[int, ...] = (256, 256)
+    hidden_sizes: Tuple[int, ...] = (64, 64)
     encoder_hidden: int = 128
     tcn_channels: Tuple[int, ...] = (64, 64)
     tcn_kernel: int = 3
@@ -129,7 +136,9 @@ class AgentConfig:
     gamma: float = 0.99
     lr: float = 1e-4
     adam_eps: float = 1.5e-4
-    weight_decay: float = 0.0
+    weight_decay: float = 1e-3           # mesuré : IC out-of-sample -0.003 (wd=0) -> +0.070
+                                         # (1e-4) -> +0.179 (1e-3), contre +0.216 pour une régression
+                                         # linéaire. La régularisation n'est pas un réglage fin ici.
     batch_size: int = 128
     buffer_size: int = 300_000
     learn_start: int = 5_000
@@ -150,10 +159,12 @@ class AgentConfig:
 @dataclass
 class TrainConfig:
     total_steps: int = 200_000
-    eval_every: int = 10_000
+    # Évaluation fréquente et patience courte : l'optimum de généralisation arrive
+    # beaucoup plus tôt qu'en apprentissage profond classique.
+    eval_every: int = 5_000
     eval_episodes: int = 1
     seeds: Tuple[int, ...] = (0,)        # >1 seed => ensemble
-    early_stop_patience: Optional[int] = 8   # en nombre d'évaluations
+    early_stop_patience: Optional[int] = 6   # en nombre d'évaluations
     early_stop_metric: str = "sharpe"
     checkpoint_dir: str = "runs"
     log_every: int = 1_000

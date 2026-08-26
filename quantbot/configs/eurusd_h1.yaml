@@ -50,7 +50,7 @@ costs:
   min_trade_size: 0.05      # bande morte : évite de payer le spread pour un micro-ajustement
 
 env:
-  window: 64
+  window: 32
   positions: [-1.0, -0.5, 0.0, 0.5, 1.0]
   execution: close          # "next_open" pour une hypothèse d'exécution plus conservatrice
   reward: dsr               # Differential Sharpe Ratio (Moody & Saffell)
@@ -70,7 +70,7 @@ env:
 agent:
   algo: rainbow
   encoder: mlp              # mlp | gru | tcn
-  hidden_sizes: [256, 256]
+  hidden_sizes: [64, 64]        # petit À DESSEIN : voir docs/METHODOLOGIE.md §6
   encoder_hidden: 128
   tcn_channels: [64, 64]
   tcn_kernel: 3
@@ -92,6 +92,7 @@ agent:
   m_tau: 0.03
   gamma: 0.99
   lr: 0.0001
+  weight_decay: 0.001           # mesuré : IC -0.003 (0) -> +0.070 (1e-4) -> +0.179 (1e-3)
   adam_eps: 0.00015
   batch_size: 128
   buffer_size: 300000
@@ -102,9 +103,9 @@ agent:
 
 train:
   total_steps: 300000
-  eval_every: 15000
+  eval_every: 5000              # l'optimum de généralisation arrive tôt
   seeds: [0, 1, 2, 3, 4]    # 5 graines => ensemble + mesure de l'incertitude épistémique
-  early_stop_patience: 8
+  early_stop_patience: 6
   early_stop_metric: sharpe
   checkpoint_dir: runs
   log_every: 5000

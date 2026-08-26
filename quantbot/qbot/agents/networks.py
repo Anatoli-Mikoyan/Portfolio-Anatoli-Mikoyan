@@ -44,8 +44,17 @@ class NoisyLinear(nn.Module):
         self.register_buffer("weight_epsilon", torch.empty(out_features, in_features))
         self.register_buffer("bias_epsilon", torch.empty(out_features))
 
+        # `None` => le bruit suit le mode du module (train/eval), comportement par défaut.
+        # `True`/`False` force explicitement l'état, ce qui permet d'explorer en mode eval
+        # (bruit actif, dropout inactif) — voir `RainbowAgent.act`.
+        self.noise_override: Optional[bool] = None
+
         self.reset_parameters()
         self.reset_noise()
+
+    @property
+    def noise_enabled(self) -> bool:
+        return self.training if self.noise_override is None else self.noise_override
 
     def reset_parameters(self) -> None:
         bound = 1.0 / math.sqrt(self.in_features)
@@ -68,11 +77,11 @@ class NoisyLinear(nn.Module):
         self.bias_epsilon.copy_(eps_out)
 
     def forward(self, x: torch.Tensor) -> torch.Tensor:
-        if self.training:
+        if self.noise_enabled:
             w = self.weight_mu + self.weight_sigma * self.weight_epsilon
             b = self.bias_mu + self.bias_sigma * self.bias_epsilon
         else:
-            w, b = self.weight_mu, self.bias_mu   # en évaluation : politique déterministe
+            w, b = self.weight_mu, self.bias_mu   # politique déterministe
         return F.linear(x, w, b)
 
     def extra_repr(self) -> str:  # pragma: no cover - affichage
@@ -313,3 +322,16 @@ class QNetwork(nn.Module):
         for module in self.modules():
             if isinstance(module, NoisyLinear):
                 module.reset_noise()
+
+    def set_noise(self, active: Optional[bool]) -> None:
+        """Force (ou libère) l'activation du bruit, indépendamment du mode train/eval.
+
+        Permet de séparer deux stochasticités que l'on confond souvent : le bruit de
+        NoisyNet, qui est la politique d'exploration APPRISE, et le dropout, qui n'est
+        qu'un régularisateur de la passe d'apprentissage. Laisser le dropout actif au
+        moment de choisir une action ajoute un aléa non maîtrisé au comportement, et fait
+        diverger la politique exécutée de celle qui a été évaluée.
+        """
+        for module in self.modules():
+            if isinstance(module, NoisyLinear):
+                module.noise_override = active

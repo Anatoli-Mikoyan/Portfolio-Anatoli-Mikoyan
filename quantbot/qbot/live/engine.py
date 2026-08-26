@@ -83,6 +83,22 @@ class InferenceEngine:
         self.n_requests = 0
         self.last_decision: Optional[PredictResponse] = None
 
+        # Historique interne : deux composantes de l'état de portefeuille (volatilité de la
+        # stratégie, intensité de trading) ne sont pas observables depuis l'EA. Les mettre
+        # à zéro serait un écart entraînement/service — le modèle serait interrogé sur des
+        # états qu'il n'a jamais rencontrés. On les reconstruit ici à partir de la suite
+        # des requêtes, comme l'environnement le fait à partir de la suite des pas.
+        #
+        # Démarrage : le serveur ignore l'équité antérieure à sa première requête, il lui
+        # manque donc un rendement dans la fenêtre glissante de 60. La parité avec
+        # l'environnement devient exacte une fois cette fenêtre entièrement remplie
+        # (~60 barres), ce que vérifie test_live_portfolio_state_matches_environment.
+        # Conséquence pratique : ne pas juger le modèle sur sa première heure de service.
+        self._equity_history: List[float] = []
+        self._strategy_returns: List[float] = []
+        self._turnover_history: List[float] = []
+        self._last_exposure: float = 0.0
+
     # ---------------------------------------------------------------------------------
     @property
     def min_bars(self) -> int:
@@ -99,11 +115,28 @@ class InferenceEngine:
         df["time"] = pd.to_datetime(df["time"].astype("int64"), unit="s", utc=True)
         return df.set_index("time").sort_index()
 
+    def _update_history(self, equity: float, exposure: float) -> None:
+        """Met à jour l'historique interne à chaque requête (une requête = une barre)."""
+        if self._equity_history:
+            prev = self._equity_history[-1]
+            if prev > 0:
+                self._strategy_returns.append(equity / prev - 1.0)
+        self._equity_history.append(equity)
+        self._turnover_history.append(abs(exposure - self._last_exposure))
+        self._last_exposure = exposure
+
+        # Bornage : seules les 200 dernières barres servent aux fenêtres glissantes.
+        for buf in (self._equity_history, self._strategy_returns, self._turnover_history):
+            if len(buf) > 200:
+                del buf[:-200]
+
     def _portfolio_state(self, msg: Dict[str, Any], df: pd.DataFrame, bar_vol: float) -> np.ndarray:
         """Reconstruit le vecteur d'état de portefeuille tel que vu à l'entraînement.
 
         Ces 6 composantes doivent correspondre EXACTEMENT, dans le même ordre et avec les
-        mêmes transformations, à celles produites par `TradingEnv._observation()`.
+        mêmes transformations, à celles produites par `TradingEnv._observation()`. Toute
+        divergence — y compris remplir une composante de zéros « faute de mieux » — place
+        le modèle hors de la distribution sur laquelle il a été entraîné.
         """
         exposure = float(msg.get("current_exposure", 0.0))
         equity = float(msg.get("equity", 1.0))
@@ -117,14 +150,20 @@ class InferenceEngine:
                       if entry and float(entry) > 0 and exposure != 0 else 0.0)
         vol = max(bar_vol, 1e-8)
 
+        self._update_history(equity, exposure)
+
+        recent = np.asarray(self._strategy_returns[-60:], dtype=float)
+        strat_vol = float(recent.std()) if recent.size >= 10 else 0.0
+        mean_turnover = (float(np.mean(self._turnover_history)) if self._turnover_history else 0.0)
+
         return np.array(
             [
                 exposure,
                 float(np.clip(drawdown, -1.0, 0.0)),
                 float(np.tanh(bars_in_pos / 50.0)),
                 float(np.clip(unrealized / (vol * 10.0), -3.0, 3.0)),
-                0.0,      # vol stratégie / vol marché : non observable côté EA -> neutre
-                0.0,      # intensité de trading : idem
+                float(np.clip(strat_vol / vol, 0.0, 5.0) - 1.0),
+                float(np.tanh(mean_turnover * 10.0)),
             ],
             dtype=np.float32,
         )

@@ -26,7 +26,9 @@ from qbot.config import (
     AgentConfig, Config, CostConfig, EnvConfig, FeatureConfig, TrainConfig,
 )
 from qbot.data.synthetic import RegimeSwitchingGBM, generate_synthetic_ohlcv
+from qbot.diagnostics import signal_report
 from qbot.experiment import backtest_model, train_model
+from qbot.features import FeaturePipeline
 from qbot.utils.logging import configure_logging, get_logger
 from qbot.validation import bootstrap_metric, monte_carlo_drawdown, train_valid_test_split
 
@@ -52,7 +54,7 @@ def main() -> int:
     configure_logging(logging.INFO)
 
     # ---------------------------------------------------------------------------------
-    banner("1/6  DONNÉES — marché synthétique à régimes, avec signal exploitable")
+    banner("1/7  DONNÉES — marché synthétique à régimes, avec signal exploitable")
     market = RegimeSwitchingGBM(
         mu=(0.10, -0.08, 0.0), sigma=(0.06, 0.18, 0.10),
         persistence=0.997, autocorr=0.25, t_df=5.0,
@@ -65,7 +67,7 @@ def main() -> int:
     print(f"  kurtosis = {rets.kurtosis():.2f} (queues épaisses, comme un vrai marché)")
 
     # ---------------------------------------------------------------------------------
-    banner("2/6  BORNE SUPÉRIEURE — que rapporterait un oracle qui connaît le signal ?")
+    banner("2/7  BORNE SUPÉRIEURE — que rapporterait un oracle qui connaît le signal ?")
     tr, va, te = train_valid_test_split(df.index, 0.6, 0.2, 0.01)
     train_df, valid_df, test_df = df.iloc[tr], df.iloc[va], df.iloc[te]
     costs = CostConfig(spread_bps=0.6, commission_bps=0.1, slippage_coef=0.05, min_trade_size=0.05)
@@ -80,7 +82,19 @@ def main() -> int:
     print(f"  oracle AVEC coûts   : sharpe {r_cost.report.sharpe:+.2f}  <- plafond réaliste")
 
     # ---------------------------------------------------------------------------------
-    banner("3/6  ENTRAÎNEMENT — Rainbow QR-DQN + Munchausen")
+    banner("3/7  SONDE DE SIGNAL — à faire AVANT de lancer un entraînement RL")
+    probe_cfg = FeatureConfig(returns_windows=(1, 2, 5, 10, 20), vol_windows=(10, 20),
+                              ema_windows=(10, 30), use_microstructure=False,
+                              use_calendar=False, scaler_window=300)
+    probe_features = FeaturePipeline(probe_cfg).fit_transform(train_df)
+    print("  Plancher = régression linéaire ; plafond = le réseau du Rainbow en supervisé.")
+    print("  Si le réseau passe sous le plancher, c'est la capacité du modèle qu'il faut")
+    print("  réduire — pas l'algorithme qu'il faut changer.")
+    signal_report(probe_features, train_df.loc[probe_features.index],
+                  windows=(4, 16), steps=2_000)
+
+    # ---------------------------------------------------------------------------------
+    banner("4/7  ENTRAÎNEMENT — Rainbow QR-DQN + Munchausen")
     cfg = Config()
     cfg.seed = args.seed
     cfg.costs = costs
@@ -89,9 +103,10 @@ def main() -> int:
     cfg.features = FeatureConfig(returns_windows=(1, 2, 5, 10, 20), vol_windows=(10, 20),
                                  ema_windows=(10, 30), use_microstructure=False,
                                  use_calendar=False, scaler_window=300)
-    cfg.agent = AgentConfig(hidden_sizes=(128, 128), n_quantiles=32, buffer_size=100_000,
+    # Réseau petit et régularisé : voir la sonde ci-dessus et docs/METHODOLOGIE.md §6.
+    cfg.agent = AgentConfig(hidden_sizes=(64, 64), n_quantiles=32, buffer_size=100_000,
                             learn_start=2_000, batch_size=64, target_update_interval=1_000,
-                            lr=3e-4, n_step=3)
+                            lr=3e-4, n_step=3, weight_decay=1e-4)
     cfg.train = TrainConfig(total_steps=args.steps, eval_every=max(args.steps // 8, 1_000),
                             early_stop_patience=None, log_every=max(args.steps // 4, 1_000))
 
@@ -101,7 +116,7 @@ def main() -> int:
     model.save(args.out)
 
     # ---------------------------------------------------------------------------------
-    banner("4/6  TEST OUT-OF-SAMPLE — segment jamais vu, touché une seule fois")
+    banner("5/7  TEST OUT-OF-SAMPLE — segment jamais vu, touché une seule fois")
     ctx = df.loc[: test_df.index[0]].iloc[:-1]
     result, positions = backtest_model(model, test_df, context_df=ctx, bpy=BPY, n_trials=1)
     print(result.report)
@@ -116,7 +131,7 @@ def main() -> int:
         print(f"    {name:<14} sharpe {r.report.sharpe:+7.3f} | CAGR {100 * r.report.cagr:+7.2f}%")
 
     # ---------------------------------------------------------------------------------
-    banner("5/6  ROBUSTESSE — la performance survit-elle au rééchantillonnage ?")
+    banner("6/7  ROBUSTESSE — la performance survit-elle au rééchantillonnage ?")
     oos = result.returns
     boot = bootstrap_metric(oos, lambda x: sharpe_ratio(x, BPY), 1_000, 20, 0, "sharpe")
     print(f"  {boot}")
@@ -126,7 +141,7 @@ def main() -> int:
           f"({'crédible' if result.report.deflated_sharpe > 0.95 else 'NON crédible'})")
 
     # ---------------------------------------------------------------------------------
-    banner("6/6  PONT LIVE — le modèle exporté répond-il comme en backtest ?")
+    banner("7/7  PONT LIVE — le modèle exporté répond-il comme en backtest ?")
     _demo_live(args.out, df)
 
     banner("TERMINÉ")

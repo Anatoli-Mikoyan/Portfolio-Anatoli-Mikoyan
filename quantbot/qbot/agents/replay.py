@@ -128,17 +128,20 @@ class NStepAccumulator:
     def _collapse(self) -> Transition:
         first = self.buf[0]
         reward, gamma_k = 0.0, 1.0
-        last = first
+        last, steps = first, 0
         for tr in self.buf:
             reward += gamma_k * tr.reward
             gamma_k *= self.gamma
-            last = tr
+            last, steps = tr, steps + 1
             if tr.done:
-                break
+                break                     # un épisode terminé tronque le retour n-step
         return Transition(
             t=first.t, portfolio=first.portfolio, action=first.action, reward=reward,
             next_t=last.next_t, next_portfolio=last.next_portfolio, done=last.done,
-            n=int(round(np.log(max(gamma_k, 1e-12)) / np.log(self.gamma))) if self.gamma < 1 else len(self.buf),
+            # `n` est simplement le nombre de transitions réellement agrégées. Le déduire
+            # de gamma_k par un logarithme casse aux bornes (gamma=0 -> log(0), gamma=1 ->
+            # division par zéro) et n'apporte rien.
+            n=steps,
         )
 
 

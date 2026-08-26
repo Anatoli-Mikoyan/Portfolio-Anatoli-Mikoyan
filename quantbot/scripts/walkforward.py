@@ -23,9 +23,7 @@ import pandas as pd
 from qbot.config import Config
 from qbot.experiment import bars_per_year, load_dataset, run_agent_on_segment, train_model
 from qbot.utils.logging import configure_logging, get_logger
-from qbot.validation import (
-    compute_pbo, monte_carlo_drawdown, run_walkforward, bootstrap_metric,
-)
+from qbot.validation import bootstrap_metric, monte_carlo_drawdown, run_walkforward
 from qbot.backtest import run_backtest, sharpe_ratio
 
 log = get_logger("scripts.walkforward")
@@ -99,14 +97,15 @@ def main() -> int:
     print(f"Drawdown : observé {mc['observed']:.2%} | médiane MC {mc['median']:.2%} | "
           f"pire 5% {mc['p95_worst']:.2%} | pire 1% {mc['p99_worst']:.2%}")
 
-    # PBO : nécessite les rendements de TOUTES les configurations essayées, alignés.
-    # Ici on utilise les folds comme configurations — indicatif, à compléter par un
-    # vrai balayage d'hyperparamètres via scripts/sweep.py.
-    matrix = _align_fold_matrix(result)
-    if matrix is not None and matrix.shape[1] >= 4:
-        pbo = compute_pbo(matrix, n_partitions=8, max_combinations=200)
-        print()
-        print(pbo)
+    # La PBO n'est PAS calculée ici, volontairement. Elle compare des CONFIGURATIONS
+    # concurrentes, pas des segments temporels : empiler les folds comme s'ils étaient
+    # des stratégies rivales produirait un nombre sans interprétation. Pour une PBO
+    # valide, passer par `scripts/sweep.py`, qui enregistre les rendements de toutes les
+    # configurations réellement essayées, puis
+    #     scripts/validate.py --matrix runs/sweep/sweep_returns.csv
+    print()
+    print("PBO : lancer scripts/sweep.py puis scripts/validate.py --matrix "
+          "(la PBO compare des configurations, pas des segments temporels).")
 
     result.oos_returns.to_frame("net_return").to_csv(out_dir / "oos_returns.csv")
     (out_dir / "walkforward_report.json").write_text(
@@ -117,17 +116,6 @@ def main() -> int:
     )
     log.info("Résultats écrits dans %s", out_dir)
     return 0
-
-
-def _align_fold_matrix(result) -> np.ndarray | None:
-    """Empile les rendements des folds en matrice (T, n_folds) pour la PBO."""
-    series = [f.returns.reset_index(drop=True) for f in result.folds]
-    if not series:
-        return None
-    n = min(len(s) for s in series)
-    if n < 100:
-        return None
-    return np.column_stack([s.iloc[:n].to_numpy() for s in series])
 
 
 if __name__ == "__main__":

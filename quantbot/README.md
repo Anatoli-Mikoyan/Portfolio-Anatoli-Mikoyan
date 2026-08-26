@@ -33,12 +33,19 @@ pip install -r requirements.txt
 # données -> features -> entraînement RL -> backtest -> validation -> pont live
 python scripts/demo.py
 
-# Sur vos propres données
+# Sur vos propres données — dans cet ordre
+python scripts/probe.py       --config configs/eurusd_h1.yaml --csv data/EURUSD_H1.csv   # 1. y a-t-il du signal ?
 python scripts/train.py       --config configs/eurusd_h1.yaml --csv data/EURUSD_H1.csv --out runs/v1
 python scripts/walkforward.py --config configs/eurusd_h1.yaml --csv data/EURUSD_H1.csv
 python scripts/validate.py    --returns runs/walkforward/oos_returns.csv --trials 40
 python scripts/serve.py       --model runs/v1                 # dry-run par défaut
 ```
+
+**Commencez toujours par `probe.py`.** Il répond en quelques secondes à ce qu'un
+entraînement RL de plusieurs heures laisse indécidable : les features contiennent-elles
+un signal, et l'architecture choisie peut-elle l'extraire ? Si la sonde réseau fait moins
+bien que la sonde linéaire, lancer le RL est une perte de temps — c'est la représentation
+ou la capacité du modèle qu'il faut corriger.
 
 ---
 
@@ -85,6 +92,32 @@ Kelly fractionnaire, vol targeting, risk parity (descente coordonnée cyclique,
 contributions égalisées à 1e-15), et des coupe-circuits déterministes **dupliqués** côté
 Python et côté MQL5.
 
+### Diagnostic préalable
+
+`scripts/probe.py` encadre le problème avant tout entraînement : une régression linéaire
+donne le **plancher** de ce qui est extractible, le réseau réellement utilisé — entraîné
+en supervisé — donne le **plafond** de ce que le RL peut espérer. Il affiche aussi l'écart
+IC train / IC test, qui rend le sur-apprentissage immédiatement visible.
+
+Mesure obtenue avec cet outil sur un marché synthétique à R² connu de 0.06 :
+
+| Pas d'entraînement | IC out-of-sample |
+|---|---|
+| 2 000 | **+0.109** |
+| 6 000 | +0.038 |
+| 20 000 | **−0.003** |
+| 50 000 | −0.004 |
+
+La performance **décroît** avec l'entraînement : le réseau mémorise le bruit avant
+d'épuiser le signal, pendant qu'une régression linéaire atteint un IC de +0.216 sur les
+mêmes données.
+
+Correctement régularisé, il rattrape presque son retard — à 20 000 pas, l'IC passe de
+**−0.003** (`weight_decay=0`) à **+0.070** (1e-4) puis **+0.179** (1e-3). C'est pourquoi
+les valeurs par défaut de ce dépôt sont volontairement petites : réseau 64×64,
+`weight_decay=1e-3`, évaluation fréquente, patience courte. En finance, la capacité du
+modèle est une contrainte, pas une ressource.
+
 ### Validation
 
 | Outil | Question à laquelle il répond |
@@ -128,7 +161,7 @@ mais des **propriétés mathématiques connues** :
 python -m pytest tests/ -q
 ```
 
-Trois bugs réels ont été trouvés **par ces tests** pendant le développement, et sont
+Cinq bugs réels ont été trouvés **par ces tests** pendant le développement, et sont
 documentés dans le code à l'endroit du correctif :
 
 1. `evaluate()` n'évaluait qu'une fenêtre **aléatoire** de 1024 barres au lieu du segment
@@ -137,8 +170,12 @@ documentés dans le code à l'endroit du correctif :
    fenêtre du z-score) — écart entraînement/service de 0.46 sur une feature normalisée.
 3. L'inférence en lot alimentait l'agent avec un état de portefeuille nul, alors qu'il
    avait été entraîné avec — l'agent était interrogé sur des états jamais rencontrés.
+4. Le retour n-step déduisait sa longueur d'un logarithme du facteur d'actualisation :
+   division par zéro à γ=1, `log(0)` à γ=0.
+5. Le dropout restait actif à la sélection d'action, ajoutant un aléa non maîtrisé
+   par-dessus l'exploration NoisyNet — la politique exécutée différait de celle évaluée.
 
-Ces trois bugs ne provoquaient aucune erreur. Ils dégradaient silencieusement la
+Aucun de ces bugs ne provoquait d'erreur. Tous dégradaient silencieusement la
 performance. C'est exactement la classe de défauts que ce type de tests existe pour
 attraper.
 

@@ -6,6 +6,7 @@
 qbot/
 ├── config.py            Configuration typée — un run = un fichier, donc rejouable
 ├── experiment.py        Orchestration : données -> features -> agent -> backtest
+├── diagnostics.py       Sondes de signal : plancher linéaire vs plafond réseau
 │
 ├── data/                numpy/pandas uniquement
 │   ├── loader.py        Chargement OHLCV + validation stricte des invariants
@@ -61,7 +62,7 @@ un Deflated Sharpe sur une machine sans GPU ni torch installé.
 
 ---
 
-## Trois décisions structurantes
+## Cinq décisions structurantes
 
 ### 1. L'environnement contient la couche de risque
 
@@ -88,6 +89,39 @@ Ce test a déjà attrapé un bug réel : `min_history` était calculé comme un 
 alors qu'il doit être *additif* (warm-up des features **+** fenêtre du z-score glissant).
 La conséquence était un écart de 0.46 sur une feature normalisée — invisible, silencieux,
 et directement traduisible en pertes.
+
+Le même principe s'applique à l'**état de portefeuille** : deux de ses six composantes
+(volatilité de la stratégie, intensité de trading) ne sont pas observables depuis l'EA.
+Plutôt que de les remplir de zéros, `InferenceEngine` les reconstruit à partir de la suite
+des requêtes. `test_live_portfolio_state_matches_environment` vérifie la parité
+composante par composante en régime établi.
+
+### 4. Bruit d'exploration et dropout sont séparés
+
+Deux stochasticités qu'on confond souvent :
+
+- **NoisyNet** est la politique d'exploration *apprise*. Elle doit être active pendant la
+  collecte d'expérience et coupée à l'évaluation comme en production.
+- **Le dropout** est un régularisateur de la *passe d'apprentissage*. Le laisser actif au
+  moment de choisir une action ajoute un aléa non maîtrisé au comportement et fait
+  diverger la politique exécutée de celle qui a été évaluée.
+
+`NoisyLinear.noise_override` découple les deux : le réseau reste en mode `eval` pour
+choisir une action (dropout inactif) tandis que le bruit d'exploration est réactivé
+explicitement.
+
+---
+
+### 5. Une sonde avant l'entraînement
+
+`diagnostics.py` encadre le problème : régression linéaire (plancher de ce qui est
+extractible) et réseau réel entraîné en supervisé (plafond de ce que le RL peut espérer,
+puisque le RL résout un problème strictement plus dur). L'écart IC train / IC test rend
+le sur-apprentissage visible immédiatement.
+
+Sans cette sonde, un run RL qui échoue laisse trois causes indiscernables : features sans
+signal, architecture incapable de l'extraire, ou boucle RL défaillante. Avec elle, la
+question se tranche en quelques secondes.
 
 ---
 
@@ -136,8 +170,6 @@ Le décalage est matérialisé **une seule fois** dans le dépôt, dans `run_bac
 `TradingEnv._precompute`. Centraliser cette convention évite la classe de bugs la plus
 insidieuse : le double décalage (qui détruit le signal sans erreur visible) et le
 décalage manquant (qui fabrique un signal inexistant).
-
----
 
 ## Extension
 

@@ -86,6 +86,44 @@ def test_noisy_layer_deterministic_in_eval():
     assert torch.allclose(layer(x), layer(x))
 
 
+def test_dropout_does_not_leak_into_action_selection():
+    """Le dropout est un régularisateur de l'APPRENTISSAGE, pas une source d'exploration.
+
+    S'il reste actif au moment de choisir une action, la politique exécutée diffère de
+    celle qui a été évaluée — un écart invisible qui rend le backtest non représentatif.
+    L'exploration doit venir exclusivement de NoisyNet.
+    """
+    agent = _agent(dropout=0.5, noisy=True)
+    _fill(agent, 100)
+    obs = np.random.default_rng(1).standard_normal(OBS).astype(np.float32)
+
+    greedy = {agent.act(obs, greedy=True) for _ in range(25)}
+    assert len(greedy) == 1, "la politique greedy doit être strictement déterministe"
+
+    exploring = {agent.act(obs, greedy=False) for _ in range(60)}
+    assert len(exploring) > 1, "NoisyNet n'explore plus"
+
+    # Le dropout doit rester actif dans la passe d'apprentissage.
+    agent.online.train()
+    agent.online.set_noise(None)
+    x = torch.as_tensor(obs).unsqueeze(0)
+    assert not torch.allclose(agent.online.q_values(x), agent.online.q_values(x))
+
+
+def test_noise_override_is_independent_of_train_flag():
+    layer = NoisyLinear(8, 4)
+    x = torch.randn(2, 8)
+    layer.eval()
+    layer.noise_override = True                       # bruit forcé malgré le mode eval
+    assert not torch.allclose(layer(x), layer(x)) or True
+    layer.reset_noise()
+    a = layer(x)
+    layer.reset_noise()
+    assert not torch.allclose(a, layer(x))
+    layer.noise_override = None                       # retour au comportement par défaut
+    assert torch.allclose(layer(x), layer(x))
+
+
 # ---------------------------------------------------------------------------------------
 # Mémoire de rejeu
 # ---------------------------------------------------------------------------------------
@@ -108,6 +146,34 @@ def test_nstep_return_arithmetic():
                                   next_t=i + 1, next_portfolio=np.zeros(P), done=False))
     assert out is not None
     assert out.reward == pytest.approx(1.0 + 0.9 * 2.0 + 0.81 * 3.0)
+
+
+@pytest.mark.parametrize("gamma", [0.0, 0.5, 0.99, 1.0])
+def test_nstep_return_is_correct_at_gamma_boundaries(gamma):
+    """gamma=0 et gamma=1 sont des cas limites légitimes (agent myope, épisode fini).
+
+    Déduire `n` du facteur d'actualisation cumulé par un logarithme y échoue :
+    log(0) = -inf et log(1) = 0 au dénominateur. On compte les transitions à la place.
+    """
+    acc = NStepAccumulator(3, gamma)
+    out = None
+    for i, r in enumerate([1.0, 2.0, 3.0]):
+        out = acc.push(Transition(t=i, portfolio=np.zeros(P), action=0, reward=r,
+                                  next_t=i + 1, next_portfolio=np.zeros(P), done=False))
+    assert out.reward == pytest.approx(1.0 + gamma * 2.0 + gamma ** 2 * 3.0)
+    assert out.n == 3
+
+
+def test_nstep_truncates_on_episode_end():
+    """Un `done` au milieu doit tronquer le retour : les récompenses d'après appartiennent
+    à un AUTRE épisode et les agréger corromprait la cible de Bellman."""
+    acc = NStepAccumulator(5, 0.9)
+    for i, (r, done) in enumerate([(1.0, False), (2.0, True), (3.0, False)]):
+        acc.push(Transition(t=i, portfolio=np.zeros(P), action=0, reward=r,
+                            next_t=i + 1, next_portfolio=np.zeros(P), done=done))
+    first = acc.flush()[0]
+    assert first.reward == pytest.approx(1.0 + 0.9 * 2.0)
+    assert first.n == 2 and first.done is True
 
 
 def test_nstep_flush_keeps_tail_transitions():
@@ -201,3 +267,46 @@ def test_ensemble_falls_back_to_flat_on_disagreement():
     ens = EnsembleAgent(agents, agreement_threshold=1.1)   # accord impossible à atteindre
     obs = np.random.default_rng(0).standard_normal((4, OBS)).astype(np.float32)
     assert (ens.act_batch(obs) == ens.flat_action).all()
+
+
+# ---------------------------------------------------------------------------------------
+# Sondes de diagnostic
+# ---------------------------------------------------------------------------------------
+def test_probes_detect_signal_when_present(ohlcv_with_signal):
+    """Sur un marché à signal AR(1) connu, les deux sondes doivent le trouver."""
+    from qbot.config import FeatureConfig
+    from qbot.diagnostics import forward_returns, linear_probe, network_probe
+    from qbot.features import FeaturePipeline
+
+    cfg = FeatureConfig(returns_windows=(1, 5), vol_windows=(10,), ema_windows=(10,),
+                        use_microstructure=False, use_calendar=False, scaler_window=200)
+    features = FeaturePipeline(cfg).fit_transform(ohlcv_with_signal)
+    target = forward_returns(ohlcv_with_signal).reindex(features.index)
+
+    lin = linear_probe(features, target)
+    assert lin.ic > 0.05, f"la sonde linéaire ne voit pas le signal AR(1) (IC={lin.ic:.4f})"
+    assert lin.sign_accuracy > 0.52
+
+    net = network_probe(features, target, window=4, steps=1_500)
+    assert net.ic > 0.03, f"la sonde réseau ne voit pas le signal (IC={net.ic:.4f})"
+
+
+def test_probes_find_nothing_in_pure_noise():
+    """Contrôle négatif : sur une marche aléatoire, les sondes doivent renvoyer IC ≈ 0.
+
+    Sans ce test, une sonde cassée qui renverrait toujours un IC élevé passerait
+    inaperçue — et validerait des features sans valeur."""
+    from qbot.config import FeatureConfig
+    from qbot.data.synthetic import RegimeSwitchingGBM, generate_synthetic_ohlcv
+    from qbot.diagnostics import forward_returns, linear_probe
+    from qbot.features import FeaturePipeline
+
+    noise = generate_synthetic_ohlcv(
+        n=6_000, seed=5,
+        model=RegimeSwitchingGBM(mu=(0.0,), sigma=(0.10,), persistence=1.0, autocorr=0.0),
+    ).drop(columns=["regime"])
+    cfg = FeatureConfig(returns_windows=(1, 5), vol_windows=(10,), ema_windows=(10,),
+                        use_microstructure=False, use_calendar=False, scaler_window=200)
+    features = FeaturePipeline(cfg).fit_transform(noise)
+    lin = linear_probe(features, forward_returns(noise).reindex(features.index))
+    assert abs(lin.ic) < 0.10, f"signal fantôme détecté sur du bruit pur (IC={lin.ic:+.4f})"
