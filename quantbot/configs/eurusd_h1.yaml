@@ -1,0 +1,143 @@
+# Configuration de référence : EURUSD, barres horaires.
+#
+# Les valeurs de coûts correspondent à un compte ECN standard chez un courtier retail.
+# Les VÉRIFIER auprès de votre propre courtier avant tout backtest : sous-estimer le
+# spread de 1 bp suffit à transformer une stratégie perdante en stratégie gagnante
+# sur le papier.
+run_name: eurusd_h1
+seed: 42
+
+data:
+  symbol: EURUSD
+  timeframe: H1
+  csv_path: null            # <- chemin de votre export MetaTrader (obligatoire en réel)
+  asset_class: fx
+  bar_type: time            # time | tick | volume | dollar | imbalance
+  bar_threshold: null
+  start: null
+  end: null
+  price_col: close
+
+features:
+  returns_windows: [1, 2, 5, 10, 20, 60]
+  vol_windows: [10, 20, 60]
+  rsi_windows: [14]
+  ema_windows: [10, 30, 100]
+  atr_window: 14
+  adx_window: 14
+  bb_window: 20
+  donchian_window: 20
+  use_fracdiff: true
+  fracdiff_d: null          # null => recherche automatique du d minimal stationnaire
+  fracdiff_thresh: 0.0001
+  use_microstructure: true
+  use_regime: true
+  use_calendar: true
+  winsorize_sigma: 8.0
+  scaler: rolling_zscore
+  scaler_window: 500
+  dropna: true
+
+costs:
+  # Volontairement pessimiste. Un backtest optimiste sur les coûts est la façon
+  # la plus rapide et la plus courante de se mentir à soi-même.
+  spread_bps: 1.5
+  spread_col: spread        # utilise le spread RÉEL de la colonne si elle existe
+  commission_bps: 0.35
+  slippage_model: sqrt      # loi racine carrée : résultat empirique robuste sur l'impact
+  slippage_coef: 0.15
+  financing_bps_per_bar: 0.0
+  min_trade_size: 0.05      # bande morte : évite de payer le spread pour un micro-ajustement
+
+env:
+  window: 64
+  positions: [-1.0, -0.5, 0.0, 0.5, 1.0]
+  execution: close          # "next_open" pour une hypothèse d'exécution plus conservatrice
+  reward: dsr               # Differential Sharpe Ratio (Moody & Saffell)
+  reward_scale: 100.0
+  dsr_eta: 0.01
+  turnover_penalty: 0.0
+  drawdown_penalty: 0.25
+  holding_penalty: 0.0
+  episode_length: 2048
+  random_start: true
+  include_position_in_obs: true
+  max_drawdown_stop: 0.25
+  vol_target: 0.10          # volatilité annualisée cible
+  vol_target_window: 60
+  max_leverage: 1.0
+
+agent:
+  algo: rainbow
+  encoder: mlp              # mlp | gru | tcn
+  hidden_sizes: [256, 256]
+  encoder_hidden: 128
+  tcn_channels: [64, 64]
+  tcn_kernel: 3
+  dropout: 0.1
+  layer_norm: true
+  double_q: true
+  dueling: true
+  noisy: true
+  noisy_sigma0: 0.5
+  prioritized: true
+  per_alpha: 0.6
+  per_beta0: 0.4
+  per_beta_steps: 200000
+  n_step: 5
+  distributional: qr        # qr | c51 | none — qr évite de borner le support a priori
+  n_quantiles: 51
+  munchausen: true
+  m_alpha: 0.9
+  m_tau: 0.03
+  gamma: 0.99
+  lr: 0.0001
+  adam_eps: 0.00015
+  batch_size: 128
+  buffer_size: 300000
+  learn_start: 5000
+  target_update_interval: 2000
+  grad_clip: 10.0
+  device: auto
+
+train:
+  total_steps: 300000
+  eval_every: 15000
+  seeds: [0, 1, 2, 3, 4]    # 5 graines => ensemble + mesure de l'incertitude épistémique
+  early_stop_patience: 8
+  early_stop_metric: sharpe
+  checkpoint_dir: runs
+  log_every: 5000
+
+validation:
+  scheme: walkforward
+  n_splits: 6
+  n_test_groups: 2
+  embargo_pct: 0.01
+  train_bars: 20000
+  test_bars: 5000
+  anchored: false
+  n_trials_for_dsr: 1       # <- METTRE À JOUR : nombre RÉEL de configurations essayées
+  bootstrap_samples: 2000
+  block_size: 20
+
+risk:
+  max_position: 1.0
+  vol_target: 0.10
+  kelly_fraction: 0.25      # jamais 1.0 : le Kelly plein mène à des drawdowns de 50 %
+  max_daily_loss: 0.03
+  max_drawdown_stop: 0.20
+  max_consecutive_losses: 8
+  cooldown_bars: 20
+  max_spread_bps: 5.0
+  session_filter: null      # ex. [[7, 16]] pour ne trader que la session de Londres
+
+live:
+  host: 127.0.0.1
+  port: 8912
+  protocol: tcp_json
+  model_path: runs/eurusd_h1
+  max_latency_ms: 500
+  heartbeat_s: 15
+  fail_safe: flat
+  dry_run: true             # <- passer à false UNIQUEMENT en connaissance de cause

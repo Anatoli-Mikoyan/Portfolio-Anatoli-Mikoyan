@@ -1,0 +1,162 @@
+data:
+  symbol: EURUSD
+  timeframe: H1
+  csv_path: null
+  asset_class: fx
+  bar_type: time
+  bar_threshold: null
+  start: null
+  end: null
+  price_col: close
+features:
+  returns_windows:
+  - 1
+  - 2
+  - 5
+  - 10
+  - 20
+  - 60
+  vol_windows:
+  - 10
+  - 20
+  - 60
+  rsi_windows:
+  - 14
+  ema_windows:
+  - 10
+  - 30
+  - 100
+  atr_window: 14
+  adx_window: 14
+  bb_window: 20
+  donchian_window: 20
+  use_fracdiff: true
+  fracdiff_d: null
+  fracdiff_thresh: 0.0001
+  use_microstructure: true
+  use_regime: true
+  use_calendar: true
+  winsorize_sigma: 8.0
+  scaler: rolling_zscore
+  scaler_window: 500
+  dropna: true
+costs:
+  spread_bps: 1.5
+  spread_col: null
+  commission_bps: 0.35
+  slippage_model: sqrt
+  slippage_coef: 0.15
+  financing_bps_per_bar: 0.0
+  min_trade_size: 0.05
+env:
+  window: 64
+  positions:
+  - -1.0
+  - -0.5
+  - 0.0
+  - 0.5
+  - 1.0
+  execution: close
+  reward: dsr
+  reward_scale: 100.0
+  dsr_eta: 0.01
+  turnover_penalty: 0.0
+  drawdown_penalty: 0.25
+  holding_penalty: 0.0
+  episode_length: 2048
+  random_start: true
+  include_position_in_obs: true
+  max_drawdown_stop: 0.25
+  vol_target: 0.1
+  vol_target_window: 60
+  max_leverage: 1.0
+agent:
+  algo: rainbow
+  encoder: mlp
+  hidden_sizes:
+  - 256
+  - 256
+  encoder_hidden: 128
+  tcn_channels:
+  - 64
+  - 64
+  tcn_kernel: 3
+  dropout: 0.1
+  layer_norm: true
+  double_q: true
+  dueling: true
+  noisy: true
+  noisy_sigma0: 0.5
+  prioritized: true
+  per_alpha: 0.6
+  per_beta0: 0.4
+  per_beta_steps: 200000
+  per_eps: 1.0e-06
+  n_step: 5
+  distributional: qr
+  n_quantiles: 51
+  n_atoms: 51
+  v_min: -10.0
+  v_max: 10.0
+  munchausen: true
+  m_alpha: 0.9
+  m_tau: 0.03
+  m_clip: -1.0
+  gamma: 0.99
+  lr: 0.0001
+  adam_eps: 0.00015
+  weight_decay: 0.0
+  batch_size: 128
+  buffer_size: 300000
+  learn_start: 5000
+  train_freq: 1
+  target_update_interval: 2000
+  target_soft_tau: null
+  grad_clip: 10.0
+  huber_kappa: 1.0
+  eps_start: 1.0
+  eps_end: 0.01
+  eps_decay_steps: 50000
+  device: auto
+train:
+  total_steps: 200000
+  eval_every: 10000
+  eval_episodes: 1
+  seeds:
+  - 0
+  early_stop_patience: 8
+  early_stop_metric: sharpe
+  checkpoint_dir: runs
+  log_every: 1000
+validation:
+  scheme: walkforward
+  n_splits: 6
+  n_test_groups: 2
+  embargo_pct: 0.01
+  train_bars: 20000
+  test_bars: 5000
+  anchored: false
+  n_trials_for_dsr: 1
+  bootstrap_samples: 2000
+  block_size: 20
+risk:
+  max_position: 1.0
+  vol_target: 0.1
+  kelly_fraction: 0.25
+  max_daily_loss: 0.03
+  max_drawdown_stop: 0.2
+  max_consecutive_losses: 8
+  cooldown_bars: 20
+  max_spread_bps: 5.0
+  session_filter: null
+live:
+  host: 127.0.0.1
+  port: 8912
+  protocol: tcp_json
+  model_path: runs/best
+  max_latency_ms: 500
+  heartbeat_s: 15
+  fail_safe: flat
+  dry_run: true
+seed: 42
+run_name: default

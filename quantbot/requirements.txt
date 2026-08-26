@@ -1,0 +1,16 @@
+# Cœur — indispensable
+numpy>=1.24
+pandas>=2.0
+scipy>=1.10
+
+# Apprentissage par renforcement (requis uniquement pour qbot.agents)
+torch>=2.0
+
+# Configuration YAML (optionnel : le JSON fonctionne sans)
+PyYAML>=6.0
+
+# Tests
+pytest>=7.4
+
+# Connecteur MetaTrader 5 (Windows uniquement, optionnel)
+# MetaTrader5>=5.0.45
