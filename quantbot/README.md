@@ -114,9 +114,9 @@ mêmes données.
 
 Correctement régularisé, il rattrape presque son retard — à 20 000 pas, l'IC passe de
 **−0.003** (`weight_decay=0`) à **+0.070** (1e-4) puis **+0.179** (1e-3). C'est pourquoi
-les valeurs par défaut de ce dépôt sont volontairement petites : réseau 64×64,
-`weight_decay=1e-3`, évaluation fréquente, patience courte. En finance, la capacité du
-modèle est une contrainte, pas une ressource.
+les valeurs par défaut de ce dépôt sont volontairement petites : réseau 64×64, fenêtre
+d'observation de 16 barres, `weight_decay=1e-3`, évaluation fréquente et patience courte.
+En finance, la capacité du modèle est une contrainte, pas une ressource.
 
 ### Validation
 
@@ -140,7 +140,7 @@ natifs de MetaTrader — **aucune DLL**, donc compatible prop-firms et Market MQ
 
 ## Ce qui est vérifié, et comment
 
-Le dépôt contient **99 tests**. Les plus importants ne testent pas l'absence d'exception
+Le dépôt contient **118 tests**. Les plus importants ne testent pas l'absence d'exception
 mais des **propriétés mathématiques connues** :
 
 | Vérification | Résultat mesuré |
