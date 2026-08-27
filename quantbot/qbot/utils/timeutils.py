@@ -35,8 +35,14 @@ def infer_bars_per_year(index: pd.DatetimeIndex, asset_class: str = "fx") -> flo
     """Estime le nombre de barres par an à partir de l'espacement médian de l'index."""
     if not isinstance(index, pd.DatetimeIndex) or len(index) < 3:
         return _EQUITY_DAYS_PER_YEAR
-    deltas = np.diff(index.view("int64")) / 1e9  # secondes
-    deltas = deltas[deltas > 0]
+    # `index.view("int64")` renverrait les entiers de la résolution SOUS-JACENTE, qui n'est
+    # pas garantie en nanosecondes : depuis pandas 3, `date_range` et `read_csv` produisent
+    # par défaut du datetime64[us]. Diviser par 1e9 donnait alors un pas mille fois trop
+    # petit, donc un nombre de barres par an mille fois trop grand — et un Sharpe annualisé
+    # multiplié par √1000 ≈ 31.6, sans la moindre erreur visible. `total_seconds()` connaît
+    # l'unité de l'index et reste juste quelle qu'elle soit.
+    deltas = (index[1:] - index[:-1]).total_seconds().to_numpy(dtype=float)
+    deltas = deltas[np.isfinite(deltas) & (deltas > 0)]
     if deltas.size == 0:
         return _EQUITY_DAYS_PER_YEAR
     step_s = float(np.median(deltas))

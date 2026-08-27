@@ -68,6 +68,23 @@ def cmd_fit(args: argparse.Namespace) -> int:
     log.info("Matrice de référence : %d lignes × %d features", len(X), X.shape[1])
 
     reference = ReferenceDistribution.fit(X, n_bins=args.bins, model_id=str(model_dir.name))
+
+    # Calibration des seuils sur les données d'entraînement elles-mêmes. Sans elle, les
+    # seuils industriels du PSI signalent en permanence : mesuré sur ce dépôt, 27 features
+    # sur 61 déclarées « critiques » sur des fenêtres tirées du jeu d'entraînement.
+    if not args.no_calibration:
+        reference.calibrate(X, window=args.drift_window, warn_q=args.warn_q,
+                            crit_q=args.crit_q)
+        if reference.psi_critical_by_feature:
+            import numpy as _np
+            c = _np.array(list(reference.psi_critical_by_feature.values()))
+            log.info("Seuils calibrés sur %d fenêtres : médian %.3f (min %.3f, max %.3f)",
+                     reference.n_calibration_windows, float(_np.median(c)),
+                     float(c.min()), float(c.max()))
+    else:
+        log.warning("Calibration désactivée : les seuils industriels (0.10 / 0.25) "
+                    "produiront de très nombreuses fausses alertes sur séries financières.")
+
     ref_path = reference.save(model_dir / "reference.json")
     log.info("Distribution de référence écrite dans %s", ref_path)
 
@@ -213,6 +230,14 @@ def main() -> int:
     f.add_argument("--data", required=True, help="données d'entraînement (CSV/Parquet)")
     f.add_argument("--end", default=None, help="borne haute de la période d'entraînement")
     f.add_argument("--bins", type=int, default=10, help="cases du découpage PSI")
+    f.add_argument("--drift-window", type=int, default=250,
+                   help="taille de la fenêtre de surveillance, pour calibrer les seuils")
+    f.add_argument("--warn-q", type=float, default=0.95,
+                   help="centile in-sample du seuil d'avertissement")
+    f.add_argument("--crit-q", type=float, default=0.99,
+                   help="centile in-sample du seuil critique")
+    f.add_argument("--no-calibration", action="store_true",
+                   help="conserver les seuils industriels (déconseillé)")
     f.add_argument("--returns", default=None,
                    help="CSV des rendements out-of-sample, pour l'enveloppe")
     f.add_argument("--returns-col", default="net_return")

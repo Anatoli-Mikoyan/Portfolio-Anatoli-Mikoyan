@@ -188,6 +188,37 @@ rien ne sait pas s'il doit fermer ou attendre ; cette ambiguïté est supprimée
 
 ---
 
+## Répétition générale : le mode rejeu
+
+Avant la première étape de la mise en production, il existe une vérification que rien
+d'autre ne remplace : **faire passer de l'historique par le chemin d'exécution réel** —
+protocole TCP, calcul des features, réseau de neurones, garde-fous, supervision — et
+regarder ce qui sort.
+
+```bash
+python scripts/serve.py --model runs/best --replay
+```
+
+Ce n'est pas un backtest. Le backtest court dans le moteur vectorisé ; le rejeu court
+dans le serveur, avec le même code que la production, y compris la reconstruction de
+l'état de portefeuille requête après requête.
+
+Le mode rejeu neutralise **uniquement** le contrôle de fraîcheur du flux (120 s), qui
+bloquerait évidemment toute barre passée. Drawdown, perte du jour, spread, séries de
+pertes, plafond d'exposition : tout le reste s'applique — sans quoi la répétition ne
+dirait rien de la production. Le serveur l'annonce au démarrage et chaque réponse porte
+un motif `replay`, pour que personne ne puisse l'activer sans s'en apercevoir.
+
+> **À n'utiliser jamais sur un compte réel.** Un serveur en mode rejeu accepterait de
+> trader sur un flux de prix mort.
+
+Ce mode existe parce que son absence a coûté cher : deux défauts réels de ce dépôt —
+un facteur d'annualisation faux d'un facteur 1 000, et des seuils de dérive non calibrés
+— n'ont été trouvés qu'en faisant réellement tourner la chaîne. Ni les tests ni les
+backtests ne les voyaient.
+
+---
+
 ## Mise en production — ordre non négociable
 
 1. **Backtest** — `scripts/train.py` puis `scripts/walkforward.py`.

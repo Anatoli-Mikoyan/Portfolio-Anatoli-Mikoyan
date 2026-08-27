@@ -168,3 +168,36 @@ def test_transform_latest_refuses_short_history(ohlcv, feature_cfg):
     pipe.fit_transform(ohlcv)
     with pytest.raises(ValueError, match="Historique insuffisant"):
         pipe.transform_latest(ohlcv.iloc[-50:], n_rows=1)
+
+# ---------------------------------------------------------------------------------------
+# Facteur d'annualisation
+# ---------------------------------------------------------------------------------------
+@pytest.mark.parametrize("unit", ["ns", "us", "ms", "s"])
+@pytest.mark.parametrize("freq,expected", [("h", 6240.0), ("15min", 24960.0), ("D", 252.0)])
+def test_bars_per_year_is_independent_of_datetime_resolution(unit, freq, expected):
+    """Le nombre de barres par an ne doit pas dépendre de la RÉSOLUTION de l'index.
+
+    Régression sur un défaut réel et silencieux : la version précédente lisait les entiers
+    de la résolution sous-jacente en supposant des nanosecondes. Depuis pandas 3, l'index
+    par défaut de `date_range` et de `read_csv` est en microsecondes — le pas mesuré était
+    donc mille fois trop petit, le nombre de barres par an mille fois trop grand, et TOUTE
+    métrique annualisée multipliée par √1000 ≈ 31.6. Aucune erreur n'était levée.
+    """
+    from qbot.utils.timeutils import infer_bars_per_year
+
+    index = pd.date_range("2020-01-01", periods=400, freq=freq, tz="UTC").as_unit(unit)
+    assert infer_bars_per_year(index) == pytest.approx(expected, rel=1e-9)
+
+
+def test_loaded_data_yields_a_sane_annualisation_factor(tmp_path):
+    """Le chemin réel : générateur -> CSV -> chargeur -> facteur d'annualisation."""
+    from qbot.data.loader import load_ohlcv
+    from qbot.utils.timeutils import infer_bars_per_year
+
+    df = generate_synthetic_ohlcv(n=300, seed=3)
+    path = tmp_path / "ohlcv.csv"
+    df.reset_index().to_csv(path, index=False)
+    loaded = load_ohlcv(path)
+
+    assert infer_bars_per_year(loaded.index) == pytest.approx(6240.0, rel=1e-9)
+    assert infer_bars_per_year(df.index) == pytest.approx(6240.0, rel=1e-9)

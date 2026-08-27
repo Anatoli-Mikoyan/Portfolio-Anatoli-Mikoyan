@@ -55,7 +55,7 @@ vrai signal du hasard bien habillé.
 quantbot/
 ├── qbot/          le moteur (72 modules)
 ├── scripts/       les 13 commandes que vous lancez
-├── tests/         246 tests qui vérifient les propriétés mathématiques
+├── tests/         268 tests qui vérifient les propriétés mathématiques
 ├── configs/       vos réglages, en YAML
 ├── mql5/          l'Expert Advisor MetaTrader 5
 └── docs/          la documentation
@@ -354,6 +354,21 @@ commune mesure avec celle du courtier (30–200 ms).
 > rang de volatilité sur 1 000 barres) **plus** la fenêtre du z-score. C'est additif, pas
 > un maximum — une erreur qui a réellement coûté un écart de 0.46 sur une feature
 > normalisée avant d'être corrigée.
+
+### D'abord : la répétition générale
+
+```bash
+python scripts/serve.py --model runs/v1 --replay
+```
+
+Fait passer votre historique par le **chemin d'exécution réel** — le serveur, le
+protocole, les features, le réseau, les garde-fous. Ce n'est pas un backtest de plus :
+c'est le seul moyen de vérifier que la chaîne complète fait ce qu'on croit, avant d'y
+engager quoi que ce soit.
+
+Le mode rejeu neutralise uniquement le contrôle de fraîcheur du flux (sinon toute barre
+passée serait rejetée). Tous les autres garde-fous restent actifs. **Ne l'activez jamais
+sur un compte réel.**
 
 ### La mise en production, dans cet ordre
 

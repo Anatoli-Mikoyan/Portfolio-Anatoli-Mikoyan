@@ -148,9 +148,15 @@ def evaluate_rules(snapshot: Dict[str, Any], cfg, bar: int = 0,
     if drift is not None:
         n_crit = int(getattr(drift, "n_critical", 0))
         worst = getattr(drift, "worst", None)
+        # Le seuil cité doit être celui réellement appliqué : avec des seuils calibrés,
+        # ils diffèrent d'une feature à l'autre et n'ont plus rien à voir avec 0.25.
+        # Un message qui annoncerait une constante fausse ferait chercher au mauvais
+        # endroit celui qui enquête.
+        seuil = ("leur seuil calibré" if getattr(drift, "calibrated", False)
+                 else f"PSI {cfg.psi_critical:.2f}")
         if n_crit > cfg.max_drifted_features:
             add("derive_generalisee", AlertLevel.CRITICAL,
-                f"{n_crit} features au-delà de PSI {cfg.psi_critical:.2f} : "
+                f"{n_crit} features au-delà de {seuil} : "
                 "le modèle est interrogé hors de sa distribution d'entraînement.",
                 float(n_crit), float(cfg.max_drifted_features),
                 worst=getattr(worst, "name", ""))

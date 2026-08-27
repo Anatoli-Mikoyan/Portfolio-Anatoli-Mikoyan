@@ -78,12 +78,29 @@ class InferenceEngine:
 
     def __init__(self, bundle: ModelBundle, risk_cfg: Optional[RiskConfig] = None,
                  cvar_alpha: Optional[float] = None, dry_run: bool = True,
-                 monitor: Optional["LiveMonitor"] = None):
+                 monitor: Optional["LiveMonitor"] = None, replay: bool = False):
         self.bundle = bundle
         # La surveillance est OPTIONNELLE et branchée en AVAL de la décision : elle
         # observe ce qui a été décidé, elle n'y participe pas. Un moniteur absent, ou en
         # panne, ne change strictement rien au comportement de trading.
         self.monitor = monitor
+
+        # Mode REJEU : répétition générale du chemin d'exécution sur des barres passées.
+        #
+        # Il n'existe aucun autre moyen d'éprouver la chaîne complète — protocole,
+        # features, réseau, garde-fous, supervision — avant d'y engager de l'argent. Sans
+        # lui, le contrôle de fraîcheur du flux (120 s) bloque évidemment toute barre
+        # historique, et l'on ne peut rien vérifier d'autre que le fait qu'il bloque.
+        #
+        # Il neutralise UNIQUEMENT ce contrôle de fraîcheur. Drawdown, perte du jour,
+        # spread, séries de pertes, plafond d'exposition : tout le reste s'applique, sans
+        # quoi la répétition ne dirait rien de la production. Un serveur démarré en mode
+        # rejeu le signale à chaque réponse (`replay` dans les motifs) et au démarrage :
+        # personne ne doit pouvoir l'activer sans s'en apercevoir.
+        self.replay = bool(replay)
+        if self.replay:
+            log.warning("MODE REJEU ACTIF — le contrôle de fraîcheur du flux est "
+                        "neutralisé. À n'utiliser JAMAIS sur un compte réel.")
         self.env_cfg: EnvConfig = bundle.config.env
         self.guard = RiskGuard(risk_cfg or bundle.config.risk)
         self.cvar_alpha = cvar_alpha
@@ -225,11 +242,14 @@ class InferenceEngine:
 
             decision = self.guard.check(
                 desired, spread_bps=spread_bps, timestamp=ts,
-                model_confidence=confidence, data_age_s=data_age,
+                model_confidence=confidence,
+                data_age_s=None if self.replay else data_age,
             )
 
             exposure = decision.allowed_position
             reasons = list(decision.reasons)
+            if self.replay:
+                reasons.append(f"replay : fraîcheur ignorée (barre vieille de {data_age:.0f}s)")
             if self.dry_run and abs(exposure) > abs(float(msg.get("current_exposure", 0.0))):
                 # En dry-run on autorise la RÉDUCTION d'exposition mais jamais l'ouverture :
                 # un mode simulation qui empêcherait aussi de fermer serait dangereux.
@@ -277,7 +297,12 @@ class InferenceEngine:
                 confidence=float(resp.confidence), status=str(resp.status),
                 latency_ms=float(resp.latency_ms),
                 spread_bps=float(spread_bps) if spread_bps else 0.0,
-                data_age_s=float(data_age), reasons=list(resp.reasons),
+                # En rejeu, l'ancienneté réelle des barres n'est pas un incident : c'est
+                # la nature même de l'exercice. La consigner telle quelle ferait crier la
+                # règle « flux de prix mort » à chaque barre et noierait les vrais
+                # signaux de la répétition. L'âge véritable reste dans `reasons`.
+                data_age_s=0.0 if self.replay else float(data_age),
+                reasons=list(resp.reasons),
             )
             self.monitor.observe(record, features=np.asarray(feature_row, dtype=float))
         except Exception:  # pragma: no cover - filet
@@ -334,6 +359,7 @@ class InferenceEngine:
             "min_bars": self.min_bars,
             "positions": self.bundle.positions.tolist(),
             "dry_run": self.dry_run,
+            "replay": self.replay,
             "requests_served": self.n_requests,
             "halted": self.guard.halted,
             "halt_reason": self.guard.halt_reason,

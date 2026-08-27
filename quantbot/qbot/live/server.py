@@ -150,6 +150,7 @@ def serve(
     cvar_alpha: Optional[float] = None,
     block: bool = True,
     monitor: Optional[Any] = None,
+    replay: bool = False,
 ) -> InferenceServer:
     """Démarre le serveur d'inférence."""
     live_cfg = live_cfg or LiveConfig()
@@ -158,7 +159,7 @@ def serve(
         monitor = build_monitor(model_dir, bundle)
     engine = InferenceEngine(bundle, risk_cfg or bundle.config.risk,
                              cvar_alpha=cvar_alpha, dry_run=live_cfg.dry_run,
-                             monitor=monitor)
+                             monitor=monitor, replay=replay)
 
     server = InferenceServer(engine, live_cfg.host, live_cfg.port)
     mode = "DRY-RUN (aucune ouverture de position)" if live_cfg.dry_run else "*** TRADING RÉEL ***"
@@ -166,6 +167,9 @@ def serve(
     log.info("L'EA doit envoyer au moins %d barres par requête.", engine.min_bars)
     if monitor is not None:
         log.info("Supervision active — messages `status` et `alerts` disponibles.")
+    if replay:
+        log.warning("*** MODE REJEU *** : répétition générale sur barres passées. "
+                    "Le contrôle de fraîcheur du flux est neutralisé.")
 
     if not block:
         threading.Thread(target=server.serve_forever, daemon=True).start()

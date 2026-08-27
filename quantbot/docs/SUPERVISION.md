@@ -104,6 +104,38 @@ Trois détails qui font la différence entre un détecteur utile et un détecteu
    « à la valeur » et « au-dessus » sont distingués. Mesuré : **PSI = 15.3** quand la
    feature revient à la vie.
 
+### Les seuils sont CALIBRÉS, pas hérités
+
+C'est le point qui décide si cette couche sert à quelque chose.
+
+Les seuils PSI usuels (0.10 / 0.25) viennent du scoring de crédit, où l'on compare deux
+grandes populations stables. Ici, on compare une fenêtre de 250 barres — qui vit dans UN
+régime — à une référence groupée qui en mélange des dizaines. Mesuré sur ce dépôt en
+appliquant 0.25 à des fenêtres tirées du **jeu d'entraînement lui-même** :
+
+| | Fenêtres in-sample (contrôle) | Fenêtre de test |
+|---|---|---|
+| Seuils industriels 0.25 | **26.6** features « critiques » / 61 | 24 / 61 |
+| Seuils calibrés (99ᵉ centile) | **1.2** / 61 | **3** / 61 |
+
+Vingt-sept features déclarées en dérive critique sur des données que le modèle a apprises :
+à ce régime, plus personne ne lit les alertes au bout d'une semaine.
+
+`ReferenceDistribution.calibrate()` remplace la question « ce PSI dépasse-t-il une
+constante venue d'un autre métier ? » par la seule qui ait un sens : **« cette fenêtre
+est-elle plus atypique que 99 % de celles sur lesquelles le modèle a été entraîné ? »**
+
+Les seuils sont calculés **par feature**, et c'est indispensable. La calibration découvre
+seule ce qu'aucun réglage manuel n'aurait deviné :
+
+| Feature | Seuil calibré | Pourquoi |
+|---|---|---|
+| `month_sin`, `month_cos` | **5.79** | une fenêtre de 250 heures couvre 10 jours : le mois y est quasi constant |
+| `roll_spread` | 5.65 | estimateur bruité par nature |
+| `hour_sin`, `hour_cos`, `sess_asia` | **0.05** (plancher) | sur 10 jours pleins, la distribution des heures est parfaitement stable |
+
+Un seuil unique condamnerait les premières ou aveuglerait les secondes.
+
 ### Ce que ça donne
 
 Mesures sur 300 barres de production contre 5 000 barres de référence :
@@ -357,6 +389,11 @@ python scripts/monitor.py fit \
     --returns runs/walkforward/oos_returns.csv \
     --horizon 1500
 ```
+
+La calibration des seuils est faite automatiquement, sur la fenêtre de surveillance
+(`--drift-window`, 250 par défaut). `--no-calibration` la désactive, et le journal le
+signale : sans elle, les seuils industriels produisent des dizaines de fausses alertes
+par fenêtre.
 
 Écrit `runs/best/reference.json` et `runs/best/envelope.json` **à côté du modèle**.
 

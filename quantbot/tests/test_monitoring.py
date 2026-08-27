@@ -117,6 +117,89 @@ def test_drift_is_quiet_when_nothing_changes(reference):
     assert rep.global_score < 0.15
 
 
+# ---------------------------------------------------------------------------------------
+# Calibration des seuils de dérive
+# ---------------------------------------------------------------------------------------
+def _drifty_frame(n: int, seed: int) -> pd.DataFrame:
+    """Série non stationnaire : volatilité qui respire, plus une saisonnalité lente.
+
+    C'est le cas réaliste — et celui qui met en défaut les seuils industriels du PSI,
+    puisqu'une fenêtre courte vit dans un seul régime alors que la référence les mélange.
+    """
+    rng = np.random.default_rng(seed)
+    t = np.arange(n)
+    vol = 1.0 + 0.8 * np.sin(2 * np.pi * t / 900.0)
+    return pd.DataFrame({
+        "stationnaire": rng.normal(0, 1, n),
+        "vol_respirante": rng.normal(0, 1, n) * vol,
+        "saison_lente": np.sin(2 * np.pi * t / 1500.0) + rng.normal(0, .2, n),
+    })
+
+
+def test_industrial_psi_thresholds_fire_on_the_training_data_itself():
+    """Fige le défaut que la calibration corrige : appliqués à des fenêtres tirées du jeu
+    d'ENTRAÎNEMENT, les seuils industriels déclarent des dérives critiques en masse."""
+    X = _drifty_frame(6000, seed=0)
+    ref = ReferenceDistribution.fit(X, n_bins=10)
+    n_crit = [ref.compare(X.iloc[s:s + 250]).n_critical for s in range(0, 5000, 400)]
+    assert np.mean(n_crit) >= 1.0        # au moins une feature sur trois signalée à tort
+
+
+def test_calibration_collapses_in_sample_false_alarms():
+    X = _drifty_frame(6000, seed=1)
+    ref = ReferenceDistribution.fit(X, n_bins=10)
+    before = np.mean([ref.compare(X.iloc[s:s + 250]).n_critical for s in range(0, 5000, 400)])
+
+    ref.calibrate(X, window=250, step=80)
+    after = np.mean([ref.compare(X.iloc[s:s + 250]).n_critical for s in range(0, 5000, 400)])
+
+    assert ref.n_calibration_windows > 8
+    assert after < before
+    # Un seuil au 99e centile sur 3 features doit laisser passer bien moins d'une alerte
+    # par fenêtre en moyenne.
+    assert after <= 0.5
+
+
+def test_calibration_keeps_detecting_a_real_shift():
+    """La calibration ne doit pas rendre le détecteur aveugle : une vraie rupture, bien
+    plus forte que la respiration in-sample, reste signalée."""
+    X = _drifty_frame(6000, seed=2)
+    ref = ReferenceDistribution.fit(X, n_bins=10).calibrate(X, window=250, step=80)
+
+    broken = _drifty_frame(250, seed=3)
+    broken["stationnaire"] = broken["stationnaire"] + 4.0
+    rep = ref.compare(broken)
+    by = {f.name: f for f in rep.features}
+    assert by["stationnaire"].verdict == "critique"
+    assert by["stationnaire"].calibrated
+
+
+def test_calibration_gives_each_feature_its_own_threshold():
+    """Une feature qui bouge naturellement doit hériter d'un seuil plus large qu'une
+    feature stable — sinon un seuil unique condamne l'une ou aveugle l'autre."""
+    X = _drifty_frame(6000, seed=4)
+    ref = ReferenceDistribution.fit(X, n_bins=10).calibrate(X, window=250, step=80)
+    seuils = ref.psi_critical_by_feature
+    assert seuils["saison_lente"] > seuils["stationnaire"]
+    assert all(v >= 0.05 for v in seuils.values())          # plancher respecté
+
+
+def test_calibration_refuses_to_run_on_too_little_data():
+    X = _drifty_frame(300, seed=5)
+    ref = ReferenceDistribution.fit(X, n_bins=10).calibrate(X, window=250, min_windows=8)
+    assert ref.psi_critical_by_feature == {}                # seuils industriels conservés
+    assert not ref.compare(X.iloc[:250]).calibrated
+
+
+def test_calibrated_thresholds_survive_a_save_and_reload(tmp_path):
+    X = _drifty_frame(4000, seed=6)
+    ref = ReferenceDistribution.fit(X, n_bins=10).calibrate(X, window=250, step=100)
+    loaded = ReferenceDistribution.load(ref.save(tmp_path / "ref.json"))
+    assert loaded.psi_critical_by_feature == ref.psi_critical_by_feature
+    assert loaded.calibration_window == 250
+    assert loaded.compare(X.iloc[:250]).calibrated
+
+
 def test_reference_distribution_round_trips(tmp_path, reference):
     path = reference.save(tmp_path / "ref.json")
     loaded = ReferenceDistribution.load(path)

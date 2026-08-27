@@ -33,6 +33,9 @@ def main() -> int:
     p.add_argument("--live", action="store_true", help="Désactive le dry-run (TRADING RÉEL)")
     p.add_argument("--cvar", type=float, default=None,
                    help="Politique averse au risque : maximise le CVaR à ce niveau (ex. 0.1)")
+    p.add_argument("--replay", action="store_true",
+                   help="Répétition générale sur barres passées : neutralise le SEUL "
+                        "contrôle de fraîcheur du flux. Jamais sur un compte réel.")
     p.add_argument("--log", type=str, default=None, help="Fichier de journal")
     args = p.parse_args()
 
@@ -48,7 +51,7 @@ def main() -> int:
                     "il pilote directement les positions du compte.", args.host)
 
     cfg = LiveConfig(host=args.host, port=args.port, model_path=args.model, dry_run=not args.live)
-    serve(args.model, cfg, cvar_alpha=args.cvar, block=True)
+    serve(args.model, cfg, cvar_alpha=args.cvar, block=True, replay=args.replay)
     return 0
 
 

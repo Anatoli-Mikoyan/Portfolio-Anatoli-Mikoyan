@@ -222,3 +222,65 @@ def test_live_portfolio_state_matches_environment(trained):
             f"composante {i} ({name}) diverge : "
             f"env={a[:3, i]} vs live={b[:3, i]}"
         )
+
+
+# ---------------------------------------------------------------------------------------
+# Mode rejeu (répétition générale)
+# ---------------------------------------------------------------------------------------
+def _stale_request(df, engine, offset_days: float = 60.0):
+    """Requête portant sur des barres anciennes, comme lors d'un rejeu d'historique."""
+    import numpy as np
+
+    window = df.iloc[-engine.min_bars:]
+    stamps = pd.date_range(end=pd.Timestamp.now(tz="UTC") - pd.Timedelta(days=offset_days),
+                           periods=len(window), freq="h", tz="UTC")
+    arr = window[["open", "high", "low", "close", "volume"]].to_numpy(float)
+    bars = [[int(t.timestamp()), *arr[i].tolist(), float(arr[i, 3] * 1e-4)]
+            for i, t in enumerate(stamps)]
+    return {"type": "predict", "symbol": "S", "timeframe": "H1", "bars": bars,
+            "equity": 10_000.0, "balance": 10_000.0, "peak_equity": 10_000.0,
+            "current_exposure": 0.0, "bars_in_position": 0}
+
+
+def test_stale_bars_are_blocked_without_replay(trained):
+    """Comportement voulu en production : on ne trade pas sur un flux de prix mort."""
+    from qbot.live.engine import InferenceEngine
+
+    from qbot.live.engine import load_bundle
+
+    model_dir, df = trained
+    engine = InferenceEngine(load_bundle(model_dir), dry_run=False, replay=False)
+    resp = engine.predict(_stale_request(df, engine))
+    assert resp.target_exposure == 0.0
+    assert any("périmé" in r for r in resp.reasons)
+
+
+def test_replay_mode_allows_historical_bars(trained):
+    """Sans mode rejeu, aucune répétition générale n'est possible : le contrôle de
+    fraîcheur bloque toute barre passée, et l'on ne peut rien vérifier d'autre."""
+    from qbot.live.engine import InferenceEngine
+
+    from qbot.live.engine import load_bundle
+
+    model_dir, df = trained
+    engine = InferenceEngine(load_bundle(model_dir), dry_run=False, replay=True)
+    resp = engine.predict(_stale_request(df, engine))
+    assert resp.status != "blocked"
+    assert any("replay" in r for r in resp.reasons)
+    assert engine.info()["replay"] is True
+
+
+def test_replay_mode_keeps_every_other_guard(trained):
+    """Le rejeu neutralise UNIQUEMENT la fraîcheur. Si les autres garde-fous tombaient
+    avec, la répétition ne dirait rien de la production."""
+    from qbot.config import RiskConfig
+    from qbot.live.engine import InferenceEngine
+
+    from qbot.live.engine import load_bundle
+
+    model_dir, df = trained
+    strict = RiskConfig(max_spread_bps=0.01)          # spread volontairement inatteignable
+    engine = InferenceEngine(load_bundle(model_dir), strict, dry_run=False, replay=True)
+    resp = engine.predict(_stale_request(df, engine))
+    assert resp.target_exposure == 0.0
+    assert any("spread" in r for r in resp.reasons)

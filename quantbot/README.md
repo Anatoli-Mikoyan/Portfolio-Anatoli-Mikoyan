@@ -291,7 +291,7 @@ natifs de MetaTrader — **aucune DLL**, donc compatible prop-firms et Market MQ
 
 ## Ce qui est vérifié, et comment
 
-Le dépôt contient **246 tests**. Les plus importants ne testent pas l'absence d'exception
+Le dépôt contient **268 tests**. Les plus importants ne testent pas l'absence d'exception
 mais des **propriétés mathématiques connues** :
 
 | Vérification | Résultat mesuré |
@@ -338,10 +338,32 @@ documentés dans le code à l'endroit du correctif :
 7. Le découpage PSI d'une feature constante plaçait référence et production dans la même
    case : une feature gelée qui redémarrait affichait un PSI de 0.004. Après encadrement
    de la valeur, **15.3**.
+8. **Le facteur d'annualisation était faux d'un facteur 1 000.** `infer_bars_per_year`
+   lisait les entiers de la résolution sous-jacente de l'index en supposant des
+   nanosecondes ; depuis pandas 3, `date_range` et `read_csv` produisent par défaut du
+   `datetime64[us]`. Le pas mesuré était donc mille fois trop petit, le nombre de barres
+   par an mille fois trop grand, et **tout Sharpe annualisé multiplié par √1000 ≈ 31.6**.
+   En production, l'effet était pire encore : la volatilité annualisée servant au
+   vol-targeting était gonflée du même facteur, donc les positions divisées par ~31 —
+   le bot restait à plat sans qu'aucune erreur ne soit levée.
+9. Les **seuils du PSI n'étaient pas calibrés**. Les valeurs industrielles (0.10 / 0.25)
+   viennent du scoring de crédit, où l'on compare deux grandes populations stables.
+   Appliquées à une fenêtre de 250 barres face à une référence groupée qui mélange des
+   dizaines de régimes, elles déclaraient **27 features sur 61 « en dérive critique » sur
+   les données d'entraînement elles-mêmes**. Les seuils sont désormais calibrés par
+   feature au 99ᵉ centile in-sample : 26.6 → **1.2** fausses alertes par fenêtre.
 
-Aucun de ces bugs ne provoquait d'erreur. Tous dégradaient silencieusement la
-performance — ou, pour les deux derniers, la capacité à *constater* cette dégradation.
-C'est exactement la classe de défauts que ce type de tests existe pour attraper.
+Aucun de ces bugs ne provoquait d'erreur. Tous dégradaient silencieusement la performance
+— ou la capacité à *constater* cette dégradation. C'est exactement la classe de défauts
+que ce type de tests existe pour attraper.
+
+Les deux derniers méritent une note : ils n'ont été trouvés qu'en faisant **réellement
+tourner** la chaîne complète — modèle entraîné, serveur TCP démarré, barres envoyées une
+par une par le protocole. Ni les 246 tests ni les backtests ne les voyaient, parce que
+les tests passent explicitement `bars_per_year=6240` et que la dérive n'y était mesurée
+que sur des distributions construites pour diverger. La leçon est générale : **une suite
+de tests verte ne remplace pas une répétition générale sur le chemin d'exécution réel.**
+D'où le mode `replay` du serveur, qui rend cette répétition possible.
 
 ---
 
