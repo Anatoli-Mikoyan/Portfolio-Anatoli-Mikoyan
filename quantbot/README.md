@@ -233,6 +233,64 @@ Les coûts sont facturés sur la position **nette**, jamais stratégie par strat
 sommer des rendements déjà nets double-compterait les frais et ignorerait la compensation
 entre signaux opposés.
 
+### Tenue de marché : gagner sans prédire
+
+Tout le reste du dépôt parie sur une direction et **paie** la fourchette pour entrer.
+Cette couche fait l'inverse : elle cote un prix d'achat et un prix de vente en
+permanence et **encaisse** l'écart. C'est le métier réel du trading haute fréquence —
+non pas prédire plus vite, mais fournir de la liquidité et se faire payer pour.
+
+```bash
+python scripts/market_making.py
+```
+
+Quatre politiques de cotation, de la plus naïve à la solution optimale :
+
+| Politique | P&L médian | Écart-type | \|inv\| max | P&L / risque |
+|---|---|---|---|---|
+| Naïve symétrique | 0.218 | 0.051 | **67.6** | 4.2 |
+| Décalage linéaire | 0.216 | 0.005 | 3.3 | 45.6 |
+| Avellaneda-Stoikov (2008) | 0.166 | 0.003 | 4.8 | 50.3 |
+| **Guéant-Lehalle-Fernandez-Tapia (2013)** | **0.660** | 0.005 | 6.8 | **147.0** |
+
+La naïve encaisse autant en moyenne — avec un inventaire dix fois plus gros et une
+variance dix fois plus forte. **L'inventaire est le risque du métier**, pas la
+prédiction.
+
+Puis la mesure qui répond à « pourquoi le HFT n'est-il pas accessible en retail ? ».
+Même politique, même flux, **pas une ligne de code changée** — seuls les frais et
+l'accès à la cotation passive varient :
+
+| Profil d'exécution | Accès passif | P&L médian | Sessions gagnantes |
+|---|---|---|---|
+| Teneur de marché HFT (rebates) | oui | **+0.660** | 100 % |
+| Institutionnel / prop firm | oui | +0.269 | 100 % |
+| Retail ECN (meilleur cas retail) | **NON** | **−2.189** | **0 %** |
+| Retail MetaTrader standard | **NON** | **−2.753** | **0 %** |
+
+Sans accès à la cotation passive, on ne tient pas un marché : on le traverse. On devient
+le client, pas le teneur.
+
+Enfin, la **sélection adverse** — la part du flux qui sait où va le prix, absente de la
+plupart des simulations qu'on trouve en ligne :
+
+| Impact du flux informé | P&L | Fourchette encaissée | P&L d'inventaire |
+|---|---|---|---|
+| 0 pip | +0.687 | 0.298 | −0.000 |
+| 1 pip | +0.495 | 0.298 | −0.192 |
+| 2 pips | +0.306 | 0.298 | −0.383 |
+| **4 pips** | **−0.072** | 0.298 | −0.766 |
+| 8 pips | −0.829 | 0.298 | −1.532 |
+
+La fourchette encaissée ne bouge pas d'un centième : **c'est l'inventaire qui bascule**.
+Le point de rupture se situe entre 2 et 4 pips d'impact — au-delà, aucun réglage de
+cotation ne rattrape le mouvement qui suit chaque exécution.
+
+Trois conditions rendent ce métier possible, et **aucune ne relève de l'algorithme** :
+l'accès à la cotation passive, des frais négatifs (rebates), et la vitesse — non pour
+prédire, mais pour *annuler* une cotation avant qu'un flux informé ne la frappe, ce qui
+se joue en microsecondes contre 30 à 200 ms depuis un terminal de détail.
+
 ### Supervision de production (§17)
 
 C'est la couche qui répond à « comment sais-je que ça marche encore ? ». Elle part d'un

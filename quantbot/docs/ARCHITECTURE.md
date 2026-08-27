@@ -55,6 +55,11 @@ qbot/
 │   ├── engine.py        Inférence réutilisant EXACTEMENT le pipeline d'entraînement
 │   └── server.py        Serveur TCP multi-thread
 │
+├── microstructure/      numpy/pandas uniquement — tenue de marché
+│   ├── model.py         flux d'ordres, sélection adverse, profils de frais
+│   ├── quoting.py       naïve, décalage linéaire, Avellaneda-Stoikov, GLFT, informée
+│   └── simulator.py     session simulée, décomposition fourchette/inventaire/frais
+│
 └── monitoring/          numpy/pandas/scipy uniquement
     ├── drift.py         PSI, KL, JS, KS corrigé, Page-Hinkley calibré
     ├── tca.py           Implementation shortfall décomposé, rabais de Sharpe
