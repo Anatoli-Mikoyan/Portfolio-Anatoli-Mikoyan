@@ -73,9 +73,12 @@ class CostConfig:
 
 @dataclass
 class EnvConfig:
-    window: int = 32                     # nombre de barres dans l'observation ; élargir
-                                         # multiplie la dimension d'entrée sans apporter
-                                         # d'information (les features encodent déjà l'historique)
+    # Fenêtre volontairement courte. Elle pilote directement la dimension d'entrée, donc
+    # le nombre de paramètres de la première couche — le poste dominant du réseau.
+    # Mesure : de 1 à 32 barres, l'IC out-of-sample reste dans la même plage. Les features
+    # encodent déjà l'historique (rendements à 2/5/20 barres, EMA, volatilités) ; empiler
+    # des copies décalées n'ajoute pas d'information, seulement de la capacité à mémoriser.
+    window: int = 16
     positions: Tuple[float, ...] = (-1.0, -0.5, 0.0, 0.5, 1.0)   # espace d'actions discret
     execution: str = "close"             # "close" (rebalance à la clôture) | "next_open"
     reward: str = "dsr"                  # "pnl" | "log_pnl" | "dsr" | "vol_scaled" | "dd_penalized"
