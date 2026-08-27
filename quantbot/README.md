@@ -34,11 +34,14 @@ pip install -r requirements.txt
 python scripts/demo.py
 
 # Sur vos propres données — dans cet ordre
-python scripts/probe.py       --config configs/eurusd_h1.yaml --csv data/EURUSD_H1.csv   # 1. y a-t-il du signal ?
-python scripts/train.py       --config configs/eurusd_h1.yaml --csv data/EURUSD_H1.csv --out runs/v1
-python scripts/walkforward.py --config configs/eurusd_h1.yaml --csv data/EURUSD_H1.csv
+python scripts/probe.py       --csv data/EURUSD_H1.csv   # 1. y a-t-il seulement du signal ?
+python scripts/screen.py      --csv data/EURUSD_H1.csv   # 2. quelles hypothèses survivent ?
+python scripts/regime.py      --csv data/EURUSD_H1.csv   # 3. quelle stratégie dans quel régime ?
+python scripts/meta.py        --csv data/EURUSD_H1.csv --importance   # 4. filtrer les signaux
+python scripts/allocate.py    --csv data/EURUSD_H1.csv   # 5. allouer le capital (RL)
+python scripts/walkforward.py --csv data/EURUSD_H1.csv   # 6. protocole de référence
 python scripts/validate.py    --returns runs/walkforward/oos_returns.csv --trials 40
-python scripts/serve.py       --model runs/v1                 # dry-run par défaut
+python scripts/serve.py       --model runs/v1            # dry-run par défaut
 ```
 
 **Commencez toujours par `probe.py`.** Il répond en quelques secondes à ce qu'un
@@ -118,6 +121,90 @@ les valeurs par défaut de ce dépôt sont volontairement petites : réseau 64×
 d'observation de 16 barres, `weight_decay=1e-3`, évaluation fréquente et patience courte.
 En finance, la capacité du modèle est une contrainte, pas une ressource.
 
+### Stratégies (§8 du cahier des charges)
+
+Cinq familles — suivi de tendance, momentum absolu, retour à la moyenne, cassure de
+Donchian, compression de volatilité. Chacune **doit** déclarer son hypothèse et le régime
+dans lequel elle est censée échouer : l'exigence est portée par le type, pas par un
+commentaire, donc on ne peut pas ajouter une stratégie sans avoir formulé ce qui la
+réfuterait.
+
+Le banc de criblage mesure deux choses distinctes : l'edge de l'hypothèse à paramètres
+figés, et ce qu'un praticien obtient après avoir optimisé les paramètres à chaque fold.
+**L'écart entre les deux est la mesure directe du data-snooping.**
+
+Validation du banc lui-même : **0/5 hypothèses retenues** sur une marche aléatoire pure
+(Reality Check p = 0.999), **2/5** sur un marché à momentum réel (p = 0.034, PBO = 0.071).
+Un banc incapable de dire non n'a aucune valeur ; un banc qui rejette tout non plus.
+
+### Méta-modèle ML (§9)
+
+Le modèle ne prédit pas la direction — il répond à « ce signal-là vaut-il la peine d'être
+suivi ? ». L'évaluation est **économique avant d'être statistique** : un modèle qui gagne
+0.02 d'AUC sans améliorer le profit factor n'a aucune valeur.
+
+| Modèle | Profit factor |
+|---|---|
+| suivre tous les signaux (référence) | 1.06 |
+| régression logistique | 1.31 |
+| forêt aléatoire | 1.46 |
+| boosting de gradient | 1.49 |
+
+`justify_complexity()` tranche automatiquement : ici +70 % de gain par trade sur le
+linéaire, donc la complexité est justifiée. Sur d'autres données, la réponse est souvent
+l'inverse — et c'est un résultat, pas un échec.
+
+### Détection de régime (§7)
+
+Trois approches comparables (règles, clustering, HMM), avec un critère unique : **un
+détecteur n'a de valeur que si la performance des stratégies diffère réellement entre ses
+régimes**, établi par permutation par blocs des étiquettes.
+
+Un défaut de conception corrigé en cours de route, mesuré : les features du modèle
+prédictif sont z-scorées sur 300 barres, or un régime dure ~833 barres, si bien que la
+normalisation efface le NIVEAU — qui est l'information de régime. Sur un marché à deux
+régimes de volatilité 2 % et 40 %, trivialement séparables : **ARI 0.011 (le hasard) avec
+les features z-scorées, 0.947 avec des features de niveau.**
+
+Ce que la couche sait faire, et ce qu'elle ne sait pas :
+
+| Marché | ARI |
+|---|---|
+| vol 2 % vs 40 % | 0.93 – 0.95 |
+| vol 10 % vs 15 % | 0.61 – 0.72 (le HMM en tête, grâce à la persistance) |
+| **dérive seule, vol identique** | **≈ 0 — indétectable** |
+
+On détecte la volatilité, jamais la dérive : à l'échelle de la barre, celle-ci est deux
+ordres de grandeur sous le bruit. Toute couche de régime qui prétendrait le contraire ment.
+
+Le biais du lissage non causal est lui aussi contre-intuitif : négligeable quand la
+détection est facile (0 % de désaccord sur 2 %/40 %), maximal quand elle est difficile
+(2.7 % sur 10 %/13 %, dispersion apparente du Sharpe passant de 0.51 à 1.05). Il trompe
+donc le plus précisément dans le cas réaliste.
+
+### Allocateur RL (§10)
+
+Le RL ne prédit plus la direction : il **répartit le capital entre les stratégies
+validées** selon le régime. C'est le bon usage du Deep Q-Learning ici, parce que l'espace
+d'états est bien plus petit, que les stratégies portent déjà l'hypothèse économique, et
+que l'échec est gracieux — un allocateur qui n'apprend rien converge vers l'équipondéré
+ou vers le plat.
+
+Mesure sur un marché alternant blocs momentum et blocs de retour à la moyenne :
+
+| | Sharpe | Max drawdown |
+|---|---|---|
+| équipondéré constant | −2.02 | −15.4 % |
+| meilleure référence fixe | +0.54 | −15.9 % |
+| **allocateur RL** | **+1.23** | **−6.8 %** |
+
+L'agent choisit de rester **hors marché 28 % du temps** — l'exigence du §2 « savoir ne pas
+trader », satisfaite concrètement et non déclarativement.
+
+Les coûts sont facturés sur la position **nette**, jamais stratégie par stratégie :
+sommer des rendements déjà nets double-compterait les frais et ignorerait la compensation
+entre signaux opposés.
+
 ### Validation
 
 | Outil | Question à laquelle il répond |
@@ -140,7 +227,7 @@ natifs de MetaTrader — **aucune DLL**, donc compatible prop-firms et Market MQ
 
 ## Ce qui est vérifié, et comment
 
-Le dépôt contient **118 tests**. Les plus importants ne testent pas l'absence d'exception
+Le dépôt contient **193 tests**. Les plus importants ne testent pas l'absence d'exception
 mais des **propriétés mathématiques connues** :
 
 | Vérification | Résultat mesuré |
