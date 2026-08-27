@@ -50,7 +50,7 @@ costs:
   min_trade_size: 0.05      # bande morte : évite de payer le spread pour un micro-ajustement
 
 env:
-  window: 32
+  window: 16                    # courte À DESSEIN : pilote la dimension d'entrée
   positions: [-1.0, -0.5, 0.0, 0.5, 1.0]
   execution: close          # "next_open" pour une hypothèse d'exécution plus conservatrice
   reward: dsr               # Differential Sharpe Ratio (Moody & Saffell)
