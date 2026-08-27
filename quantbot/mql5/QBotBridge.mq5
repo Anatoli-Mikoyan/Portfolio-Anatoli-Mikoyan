@@ -47,6 +47,11 @@ input double  InpMaxDrawdownPct    = 20.0;         // Drawdown max sur le compte
 input double  InpMinEquity         = 0.0;          // Équité plancher (0 = désactivé)
 input bool    InpTradeOnNewBarOnly = true;         // Décider uniquement à la clôture d'une barre
 
+input group "=== Supervision (§17) ==="
+input int     InpStatusEveryBars   = 24;           // Interroger la supervision toutes les N barres (0 = jamais)
+input bool    InpShowPanel         = true;         // Afficher le panneau de supervision sur le graphique
+input bool    InpBlockOnCritical   = false;        // Passer à plat si le serveur signale une alerte critique
+
 input group "=== Journalisation ==="
 input bool    InpVerbose           = true;         // Journal détaillé
 input bool    InpDryRun            = true;         // true = aucun ordre réellement envoyé
@@ -66,6 +71,9 @@ double   g_entryPrice    = 0.0;
 int      g_barsInPos     = 0;
 int      g_reconnects    = 0;
 int      g_failedReqs    = 0;
+int      g_barsSinceStatus = 0;
+string   g_lastStatus     = "";
+bool     g_serverCritical = false;
 bool     g_halted        = false;
 string   g_haltReason    = "";
 
@@ -112,6 +120,81 @@ void OnDeinit(const int reason)
    CloseSocket();
    PrintFormat("QBotBridge arrêté (raison=%d) | reconnexions=%d | requêtes échouées=%d",
                reason, g_reconnects, g_failedReqs);
+}
+
+//====================================================================
+//  SUPERVISION (§17)
+//====================================================================
+// Le serveur Python calcule dérive des features, écart attendu/réalisé, coûts réels et
+// alertes. L'EA n'en refait rien : il interroge, affiche et — si on le lui demande —
+// se met à plat. Dupliquer ces calculs côté MQL5 introduirait deux vérités, et c'est
+// toujours la mauvaise qu'on croit.
+void RequestStatus()
+{
+   if(InpStatusEveryBars <= 0)
+      return;
+   g_barsSinceStatus++;
+   if(g_barsSinceStatus < InpStatusEveryBars)
+      return;
+   g_barsSinceStatus = 0;
+
+   string response = "";
+   if(!SendAndReceive("{\"type\":\"status\"}", response))
+   {
+      if(InpVerbose)
+         Print("Supervision : pas de réponse du serveur.");
+      return;
+   }
+   if(!JsonGetBool(response, "ok"))
+   {
+      if(InpVerbose)
+         PrintFormat("Supervision indisponible : %s", JsonGetString(response, "error"));
+      return;
+   }
+
+   string driftStatus  = JsonGetString(response, "drift_status");
+   int    driftCrit    = (int)JsonGetNumber(response, "drift_critical");
+   string driftWorst   = JsonGetString(response, "drift_worst");
+   int    alertCount   = (int)JsonGetNumber(response, "alert_count");
+   string alertWorst   = JsonGetString(response, "alert_worst");
+   string reconVerdict = JsonGetString(response, "recon_verdict");
+   string tcaVerdict   = JsonGetString(response, "tca_verdict");
+   double tcaRatio     = JsonGetNumber(response, "tca_ratio");
+   bool   journalOk    = JsonGetBool(response, "journal_ok");
+   double sharpe       = JsonGetNumber(response, "sharpe_rolling");
+   double dd           = JsonGetNumber(response, "drawdown");
+   double p99          = JsonGetNumber(response, "p99_latency_ms");
+   int    nBars        = (int)JsonGetNumber(response, "n_bars");
+
+   g_serverCritical = (alertWorst == "critical");
+
+   PrintFormat("SUPERVISION | barres=%d Sharpe=%.2f DD=%.2f%% | dérive=%s (%d crit., pire=%s) "
+               "| coûts=%.2fx | alertes=%d (%s) | journal=%s",
+               nBars, sharpe, dd * 100.0, driftStatus, driftCrit, driftWorst,
+               tcaRatio, alertCount, alertWorst, (journalOk ? "intègre" : "COMPROMIS"));
+
+   if(InpShowPanel)
+   {
+      g_lastStatus = StringFormat(
+         "QBot — supervision\n"
+         "Barres observées : %d\n"
+         "Sharpe glissant  : %.2f\n"
+         "Drawdown         : %.2f %%\n"
+         "Latence p99      : %.0f ms\n"
+         "Dérive features  : %s (%d critiques)\n"
+         "Attendu/réalisé  : %s\n"
+         "Coûts exécution  : %s (%.2fx)\n"
+         "Alertes          : %d — pire : %s\n"
+         "Journal d'audit  : %s",
+         nBars, sharpe, dd * 100.0, p99, driftStatus, driftCrit,
+         reconVerdict, tcaVerdict, tcaRatio, alertCount, alertWorst,
+         (journalOk ? "intègre" : "COMPROMIS"));
+      Comment(g_lastStatus);
+   }
+
+   if(!journalOk)
+      Print("ALERTE : la chaîne du journal d'audit est rompue côté serveur. "
+            "Une décision a été modifiée ou supprimée après écriture.");
 }
 
 //====================================================================
@@ -166,6 +249,7 @@ void OnTick()
    }
 
    ProcessResponse(response);
+   RequestStatus();
 }
 
 //====================================================================
@@ -346,6 +430,18 @@ void ProcessResponse(const string json)
    }
 
    target = MathMax(-InpMaxExposure, MathMin(InpMaxExposure, target));
+
+   // Alerte critique côté serveur, et l'opérateur a demandé d'y réagir. On bloque le
+   // RENFORCEMENT, jamais la réduction : un mode de sécurité qui empêcherait aussi de
+   // fermer serait plus dangereux que le problème qu'il traite.
+   // Désactivé par défaut : une couche d'observation qui pilote les positions devient
+   // elle-même un risque opérationnel. On l'active après avoir observé ses alertes.
+   double current = CurrentExposure();
+   if(InpBlockOnCritical && g_serverCritical && MathAbs(target) > MathAbs(current))
+   {
+      Print("Alerte critique côté serveur : renforcement bloqué, réduction toujours permise.");
+      target = current;
+   }
 
    if(InpVerbose)
       PrintFormat("Décision : exposition=%.4f | actuelle=%.4f | confiance=%.2f | statut=%s | %.1f ms",

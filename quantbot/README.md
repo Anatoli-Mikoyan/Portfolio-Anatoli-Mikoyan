@@ -41,7 +41,10 @@ python scripts/meta.py        --csv data/EURUSD_H1.csv --importance   # 4. filtr
 python scripts/allocate.py    --csv data/EURUSD_H1.csv   # 5. allouer le capital (RL)
 python scripts/walkforward.py --csv data/EURUSD_H1.csv   # 6. protocole de référence
 python scripts/validate.py    --returns runs/walkforward/oos_returns.csv --trials 40
+python scripts/monitor.py fit --model runs/v1 --data data/EURUSD_H1.csv \
+                              --returns runs/walkforward/oos_returns.csv   # 7. figer la référence
 python scripts/serve.py       --model runs/v1            # dry-run par défaut
+python scripts/monitor.py report --model runs/v1 --html supervision.html   # 8. surveiller
 ```
 
 **Commencez toujours par `probe.py`.** Il répond en quelques secondes à ce qu'un
@@ -205,6 +208,67 @@ Les coûts sont facturés sur la position **nette**, jamais stratégie par strat
 sommer des rendements déjà nets double-compterait les frais et ignorerait la compensation
 entre signaux opposés.
 
+### Supervision de production (§17)
+
+C'est la couche qui répond à « comment sais-je que ça marche encore ? ». Elle part d'un
+constat mesuré et désagréable :
+
+| Durée en production | Probabilité de détecter une chute de 1.2 → −1.5 de Sharpe |
+|---|---|
+| 300 barres (~2 semaines) | **10 %** |
+| 1 000 barres | 33 % |
+| 3 000 barres | 68 % |
+| 6 240 barres (**1 an**) | **93 %** |
+
+Il faut donc environ **un an** pour prouver par la performance qu'une stratégie horaire
+s'est effondrée. D'où le principe de la couche : **surveiller la cause avant l'effet.**
+
+| Couche | Délai de détection | Ce qu'elle voit |
+|---|---|---|
+| comportement | immédiat | modèle bloqué, garde-fous qui écrasent tout, latence |
+| coûts d'exécution | ~50 exécutions | le backtest sous-estimait le slippage |
+| dérive des features | ~250 barres | le marché n'est plus celui de l'entraînement |
+| performance | ~1 an | le seul juge qui compte, et le plus lent |
+
+Mesures de la détection de dérive (300 barres live contre 5 000 de référence) :
+
+| Situation | PSI | Verdict |
+|---|---|---|
+| rien ne change | 0.03 – 0.05 | stable |
+| moyenne décalée de 1.2 σ | 1.52 | critique |
+| volatilité × 3, **moyenne inchangée** | 1.07 | critique |
+| feature gelée qui redémarre | 15.3 | critique |
+
+Le troisième cas est celui qu'un test de moyenne manquerait entièrement.
+
+Trois pièges traités explicitement, parce qu'ils annulent la surveillance sans rien
+casser de visible :
+
+- **Autocorrélation.** 250 barres horaires ne valent que ~13 observations indépendantes
+  pour ρ₁ = 0.9. Sans correction, le Kolmogorov-Smirnov crie en permanence et l'équipe
+  coupe les alertes.
+- **Détecteur qui réapprend sa moyenne.** Un Page-Hinkley adaptatif *suit* la dégradation
+  au lieu de la signaler. Le mode à référence fixe est obligatoire pour la performance.
+- **Alertes répétitives.** Temporisation doublée à chaque répétition : sur le scénario de
+  démonstration, **99 alertes → 20** pour la même information.
+
+Le tout est calibré, pas deviné : λ du Page-Hinkley est résolu numériquement à partir du
+budget de fausses alarmes (approximation de Siegmund), et l'`arl0` par défaut sort d'une
+mesure de compromis puissance / fausses alarmes.
+
+S'y ajoutent une **analyse des coûts de transaction** (implementation shortfall de Perold,
+décomposé en délai / spread / commission / impact) qui traduit le slippage réel en points
+de Sharpe perdus, un **journal d'audit chaîné par SHA-256** (esprit MiFID II RTS 6 :
+toute modification ou suppression a posteriori est localisée), et un **tableau de bord
+HTML autonome** — un seul fichier, aucune ressource externe, aucune donnée qui sort de la
+machine.
+
+Le moniteur **ne ferme aucune position** : il expose `should_halt`, relié au coupe-circuit
+seulement si on le demande (`halt_on_critical`, faux par défaut). Une couche d'observation
+qui peut liquider un portefeuille devient elle-même un risque.
+
+→ **[docs/SUPERVISION.md](docs/SUPERVISION.md)**
+
 ### Validation
 
 | Outil | Question à laquelle il répond |
@@ -227,7 +291,7 @@ natifs de MetaTrader — **aucune DLL**, donc compatible prop-firms et Market MQ
 
 ## Ce qui est vérifié, et comment
 
-Le dépôt contient **193 tests**. Les plus importants ne testent pas l'absence d'exception
+Le dépôt contient **246 tests**. Les plus importants ne testent pas l'absence d'exception
 mais des **propriétés mathématiques connues** :
 
 | Vérification | Résultat mesuré |
@@ -243,6 +307,12 @@ mais des **propriétés mathématiques connues** :
 | Bootstrap par blocs préserve l'autocorrélation | 0.498 → **0.484** (i.i.d. : −0.031) |
 | L'agent apprend un signal trivial | converge, sinon la boucle serait cassée |
 | Reality Check : faux positifs contrôlés | p = 0.09 sans edge, p < 0.001 avec |
+| ARL₀ du Page-Hinkley : théorie vs simulation | 10 000 visé, **~16 000** mesuré |
+| Délai de détection : théorie vs simulation | 58 barres prévues, **51** mesurées |
+| Détecteur adaptatif aveugle à la dérive qu'il apprend | figé par un test dédié |
+| Décomposition des coûts == shortfall total | somme **exacte** (0.8+1.0+2.0 = 3.8 bps) |
+| Journal falsifié : rupture localisée | modification **et** suppression détectées |
+| Tableau de bord : aucune ressource externe | 0 occurrence de `http`, `<script`, `src=` |
 
 ```bash
 python -m pytest tests/ -q
@@ -261,20 +331,32 @@ documentés dans le code à l'endroit du correctif :
    division par zéro à γ=1, `log(0)` à γ=0.
 5. Le dropout restait actif à la sélection d'action, ajoutant un aléa non maîtrisé
    par-dessus l'exploration NoisyNet — la politique exécutée différait de celle évaluée.
+6. Le détecteur séquentiel de dégradation recentrait les rendements sur **sa propre**
+   moyenne courante, laquelle absorbait exactement la dégradation cherchée. La détection
+   d'un effondrement à un an passait de 22 % à **92 %** une fois la référence figée sur
+   les moments du backtest.
+7. Le découpage PSI d'une feature constante plaçait référence et production dans la même
+   case : une feature gelée qui redémarrait affichait un PSI de 0.004. Après encadrement
+   de la valeur, **15.3**.
 
 Aucun de ces bugs ne provoquait d'erreur. Tous dégradaient silencieusement la
-performance. C'est exactement la classe de défauts que ce type de tests existe pour
-attraper.
+performance — ou, pour les deux derniers, la capacité à *constater* cette dégradation.
+C'est exactement la classe de défauts que ce type de tests existe pour attraper.
 
 ---
 
 ## Documentation
 
+- **[docs/GUIDE.md](docs/GUIDE.md)** — **le mode d'emploi complet** : les 13 commandes une
+  par une, le parcours de bout en bout sur vos données, comment lire les résultats sans
+  se tromper, et les problèmes fréquents. **Commencez par là pour vous en servir.**
 - **[docs/METHODOLOGIE.md](docs/METHODOLOGIE.md)** — pourquoi la plupart des bots échouent,
-  et les défenses implémentées ici. **À lire en premier.**
+  et les défenses implémentées ici. **À lire en premier pour comprendre.**
 - **[docs/ARCHITECTURE.md](docs/ARCHITECTURE.md)** — structure du code et décisions de conception.
 - **[docs/INTEGRATION_MT5.md](docs/INTEGRATION_MT5.md)** — installation, protocole,
   diagnostic, et le protocole de mise en production.
+- **[docs/SUPERVISION.md](docs/SUPERVISION.md)** — surveillance en production : dérive,
+  coûts réels, attendu vs réalisé, journal d'audit, alertes, tableau de bord.
 
 ---
 

@@ -142,3 +142,31 @@ live:
   heartbeat_s: 15
   fail_safe: flat
   dry_run: true             # <- passer à false UNIQUEMENT en connaissance de cause
+
+monitor:
+  # Surveillance de production (§17). Voir docs/SUPERVISION.md.
+  enabled: true
+  window: 500               # barres retenues pour les métriques glissantes
+  drift_window: 250         # fenêtre de comparaison à la distribution d'entraînement
+  drift_min_samples: 100    # en deçà, AUCUN verdict de dérive n'est rendu
+  drift_every: 25           # cadence de recalcul (borne le coût par barre)
+  psi_warn: 0.10            # seuils PSI usuels du risk management
+  psi_critical: 0.25
+  max_drifted_features: 3   # au-delà, la dérive est dite « généralisée »
+  latency_warn_ms: 250.0
+  latency_critical_ms: 1000.0
+  max_data_age_s: 300.0     # au-delà, le flux de prix est considéré mort
+  live_dd_warn: 0.08
+  live_dd_critical: 0.15
+  sharpe_floor: -1.0
+  min_bars_for_performance: 120
+  cost_ratio_warn: 1.5      # coûts réalisés / coûts modélisés
+  cost_ratio_critical: 2.5
+  regime_change_threshold: 0.7
+  regime_confirm_bars: 3
+  delta_sharpe: 2.0         # chute de Sharpe que la détection doit voir
+  arl0: 31200.0             # une fausse alarme tous les ~5 ans en H1 (valeur mesurée)
+  alert_cooldown_bars: 30   # temporisation de base, doublée à chaque répétition
+  halt_on_critical: false   # le moniteur observe ; il ne coupe que si on le demande
+  journal_path: null        # null => <dossier du modèle>/audit.jsonl
+  dashboard_path: null

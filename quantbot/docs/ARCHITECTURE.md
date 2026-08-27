@@ -50,10 +50,20 @@ qbot/
 │   ├── pbo.py           CSCV / probabilité de sur-apprentissage
 │   └── monte_carlo.py   Bootstrap stationnaire, Reality Check, permutation de trades
 │
-└── live/
-    ├── protocol.py      JSON délimité + cadrage TCP
-    ├── engine.py        Inférence réutilisant EXACTEMENT le pipeline d'entraînement
-    └── server.py        Serveur TCP multi-thread
+├── live/
+│   ├── protocol.py      JSON délimité + cadrage TCP
+│   ├── engine.py        Inférence réutilisant EXACTEMENT le pipeline d'entraînement
+│   └── server.py        Serveur TCP multi-thread
+│
+└── monitoring/          numpy/pandas/scipy uniquement
+    ├── drift.py         PSI, KL, JS, KS corrigé, Page-Hinkley calibré
+    ├── tca.py           Implementation shortfall décomposé, rabais de Sharpe
+    ├── store.py         Mémoire de production et indicateurs
+    ├── reconciliation.py Enveloppe bootstrap, test séquentiel, rejeu des décisions
+    ├── journal.py       Trace d'audit chaînée par SHA-256
+    ├── alerts.py        Règles déterministes, niveaux, temporisation croissante
+    ├── monitor.py       Orchestrateur appelé une fois par barre
+    └── dashboard.py     Tableau de bord HTML autonome (SVG à la main)
 ```
 
 **Règle de dépendance** : seul `agents/` importe PyTorch. Backtest, validation, features
@@ -124,6 +134,27 @@ signal, architecture incapable de l'extraire, ou boucle RL défaillante. Avec el
 question se tranche en quelques secondes.
 
 ---
+
+### 6. La surveillance observe, elle ne décide pas
+
+`LiveMonitor` est branché en **aval** de la décision et ne ferme aucune position. Il
+expose `should_halt`, que le serveur est libre de consulter et que la configuration relie
+ou non au coupe-circuit (`halt_on_critical`, faux par défaut).
+
+Trois conséquences concrètes :
+
+- `observe()` **ne lève jamais** : toute exception est capturée, comptée dans `n_errors`
+  et journalisée. Le pire scénario acceptable est un tableau de bord dégradé, jamais une
+  session de trading interrompue par son propre observateur.
+- Un moniteur absent ou en panne ne change **rien** au comportement de trading. Les
+  fichiers `reference.json` / `envelope.json` manquants dégradent proprement la
+  surveillance, et le serveur le dit au démarrage.
+- Les couches coûteuses (dérive, coûts, réconciliation) sont **cadencées**
+  (`drift_every`, 25 barres par défaut) pour que le coût par barre reste borné.
+
+La raison de fond : une couche d'observation capable de liquider un portefeuille devient
+elle-même un risque opérationnel. Le premier seuil mal réglé coûterait un compte, et il
+n'y aurait rien pour l'arrêter — puisque c'est précisément la couche censée surveiller.
 
 ## Flux d'une décision, du prix au lot
 

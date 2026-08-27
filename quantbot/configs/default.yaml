@@ -158,5 +158,31 @@ live:
   heartbeat_s: 15
   fail_safe: flat
   dry_run: true
+monitor:
+  enabled: true
+  window: 500
+  drift_window: 250
+  drift_min_samples: 100
+  drift_every: 25
+  psi_warn: 0.1
+  psi_critical: 0.25
+  max_drifted_features: 3
+  latency_warn_ms: 250.0
+  latency_critical_ms: 1000.0
+  max_data_age_s: 300.0
+  live_dd_warn: 0.08
+  live_dd_critical: 0.15
+  sharpe_floor: -1.0
+  min_bars_for_performance: 120
+  cost_ratio_warn: 1.5
+  cost_ratio_critical: 2.5
+  regime_change_threshold: 0.7
+  regime_confirm_bars: 3
+  delta_sharpe: 2.0
+  arl0: 31200.0
+  alert_cooldown_bars: 30
+  halt_on_critical: false
+  journal_path: null
+  dashboard_path: null
 seed: 42
 run_name: default

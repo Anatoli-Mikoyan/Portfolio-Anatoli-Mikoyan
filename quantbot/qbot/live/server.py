@@ -20,6 +20,7 @@ from typing import Any, Dict, Optional
 
 from ..config import LiveConfig, RiskConfig
 from ..utils.logging import get_logger
+from ..monitoring.journal import DecisionJournal
 from .engine import InferenceEngine, ModelBundle, load_bundle
 from .protocol import PROTOCOL_VERSION, LineFramer, error_response
 
@@ -66,6 +67,17 @@ class _Handler(socketserver.BaseRequestHandler):
                                 "version": PROTOCOL_VERSION}) + "\n").encode("utf-8")
         if kind == "info":
             return (json.dumps(engine.info()) + "\n").encode("utf-8")
+        if kind == "status":
+            # Instantané de supervision. Volontairement distinct de `info` : `info` décrit
+            # la configuration (stable, interrogée à la connexion), `status` décrit l'état
+            # vivant (métriques, dérive, alertes) et coûte plus cher à produire.
+            return (json.dumps(engine.status(), default=str) + "\n").encode("utf-8")
+        if kind == "alerts":
+            if engine.monitor is None:
+                return error_response("surveillance désactivée sur ce serveur").to_json()
+            payload = engine.monitor.alerts.summary()
+            payload.update({"ok": True, "type": "alerts"})
+            return (json.dumps(payload, default=str) + "\n").encode("utf-8")
         if kind == "reset_guard":
             engine.guard.reset()
             log.warning("Coupe-circuit réarmé manuellement.")
@@ -91,23 +103,69 @@ class InferenceServer(socketserver.ThreadingTCPServer):
         super().shutdown()
 
 
+def build_monitor(model_dir: str | Path, bundle: ModelBundle,
+                  cfg: Optional[Any] = None) -> Optional[Any]:
+    """Construit le moniteur d'un modèle exporté, si les fichiers de référence existent.
+
+    `reference.json` et `envelope.json` sont produits par `scripts/monitor.py fit` à
+    partir des MÊMES données que l'entraînement. Leur absence n'est pas une erreur : la
+    surveillance se dégrade proprement — pas de détection de dérive, pas de confrontation
+    attendu/réalisé — et les métriques de production restent collectées. Le serveur le
+    dit explicitement au démarrage plutôt que de laisser croire à une surveillance
+    complète.
+    """
+    from ..monitoring import LiveMonitor, PerformanceEnvelope, ReferenceDistribution
+    from ..utils.timeutils import bars_per_year_for_timeframe
+
+    model_dir = Path(model_dir)
+    cfg = cfg if cfg is not None else getattr(bundle.config, "monitor", None)
+    if cfg is None or not getattr(cfg, "enabled", True):
+        return None
+
+    ref_path = model_dir / "reference.json"
+    env_path = model_dir / "envelope.json"
+    reference = ReferenceDistribution.load(ref_path) if ref_path.exists() else None
+    envelope = None
+    if env_path.exists():
+        envelope = PerformanceEnvelope.from_dict(
+            json.loads(env_path.read_text(encoding="utf-8")))
+
+    if reference is None:
+        log.warning("reference.json absent de %s : détection de dérive INACTIVE "
+                    "(la produire avec « python scripts/monitor.py fit »).", model_dir)
+    if envelope is None:
+        log.warning("envelope.json absent de %s : confrontation attendu/réalisé INACTIVE.",
+                    model_dir)
+
+    bpy = bars_per_year_for_timeframe(bundle.config.data.timeframe)
+    journal_path = getattr(cfg, "journal_path", None) or str(model_dir / "audit.jsonl")
+    return LiveMonitor(cfg, reference=reference, envelope=envelope, bars_per_year=bpy,
+                       model_id=bundle.model_id, journal=DecisionJournal(journal_path))
+
+
 def serve(
     model_dir: str | Path,
     live_cfg: Optional[LiveConfig] = None,
     risk_cfg: Optional[RiskConfig] = None,
     cvar_alpha: Optional[float] = None,
     block: bool = True,
+    monitor: Optional[Any] = None,
 ) -> InferenceServer:
     """Démarre le serveur d'inférence."""
     live_cfg = live_cfg or LiveConfig()
     bundle = load_bundle(model_dir)
+    if monitor is None:
+        monitor = build_monitor(model_dir, bundle)
     engine = InferenceEngine(bundle, risk_cfg or bundle.config.risk,
-                             cvar_alpha=cvar_alpha, dry_run=live_cfg.dry_run)
+                             cvar_alpha=cvar_alpha, dry_run=live_cfg.dry_run,
+                             monitor=monitor)
 
     server = InferenceServer(engine, live_cfg.host, live_cfg.port)
     mode = "DRY-RUN (aucune ouverture de position)" if live_cfg.dry_run else "*** TRADING RÉEL ***"
     log.info("Serveur d'inférence sur %s:%d — %s", live_cfg.host, live_cfg.port, mode)
     log.info("L'EA doit envoyer au moins %d barres par requête.", engine.min_bars)
+    if monitor is not None:
+        log.info("Supervision active — messages `status` et `alerts` disponibles.")
 
     if not block:
         threading.Thread(target=server.serve_forever, daemon=True).start()

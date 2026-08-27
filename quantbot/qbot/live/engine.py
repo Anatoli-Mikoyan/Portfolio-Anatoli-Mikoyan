@@ -13,7 +13,7 @@ import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 import numpy as np
 import pandas as pd
@@ -24,6 +24,9 @@ from ..features import FeaturePipeline
 from ..risk import GuardStatus, RiskGuard
 from ..utils.logging import get_logger
 from .protocol import PredictResponse, error_response, validate_predict_request
+
+if TYPE_CHECKING:  # pragma: no cover - uniquement pour le typage
+    from ..monitoring import LiveMonitor
 
 log = get_logger("live.engine")
 
@@ -74,8 +77,13 @@ class InferenceEngine:
     """Transforme une requête de l'EA en décision d'exposition, garde-fous compris."""
 
     def __init__(self, bundle: ModelBundle, risk_cfg: Optional[RiskConfig] = None,
-                 cvar_alpha: Optional[float] = None, dry_run: bool = True):
+                 cvar_alpha: Optional[float] = None, dry_run: bool = True,
+                 monitor: Optional["LiveMonitor"] = None):
         self.bundle = bundle
+        # La surveillance est OPTIONNELLE et branchée en AVAL de la décision : elle
+        # observe ce qui a été décidé, elle n'y participe pas. Un moniteur absent, ou en
+        # panne, ne change strictement rien au comportement de trading.
+        self.monitor = monitor
         self.env_cfg: EnvConfig = bundle.config.env
         self.guard = RiskGuard(risk_cfg or bundle.config.risk)
         self.cvar_alpha = cvar_alpha
@@ -244,11 +252,36 @@ class InferenceEngine:
                 latency_ms=round((time.perf_counter() - t0) * 1000.0, 3),
             )
             self.last_decision = resp
+            if self.monitor is not None:
+                self._notify_monitor(msg, resp, df, ts, spread_bps, data_age, feats[-1])
             return resp
 
         except Exception as exc:  # pragma: no cover - filet de sécurité
             log.exception("Erreur d'inférence")
             return error_response(f"{type(exc).__name__}: {exc}", status="blocked")
+
+    # ---------------------------------------------------------------------------------
+    def _notify_monitor(self, msg: Dict[str, Any], resp: PredictResponse,
+                        df: pd.DataFrame, ts, spread_bps, data_age: float,
+                        feature_row: np.ndarray) -> None:
+        """Transmet la barre au moniteur. Ne doit jamais faire échouer une prédiction."""
+        from ..monitoring import DecisionRecord
+
+        try:
+            record = DecisionRecord(
+                ts=ts.isoformat(), equity=float(msg.get("equity", 0.0)),
+                balance=float(msg.get("balance", 0.0)),
+                price=float(df["close"].iloc[-1]),
+                target=float(msg.get("desired_exposure", resp.target_exposure)),
+                applied=float(resp.target_exposure), action=int(resp.action),
+                confidence=float(resp.confidence), status=str(resp.status),
+                latency_ms=float(resp.latency_ms),
+                spread_bps=float(spread_bps) if spread_bps else 0.0,
+                data_age_s=float(data_age), reasons=list(resp.reasons),
+            )
+            self.monitor.observe(record, features=np.asarray(feature_row, dtype=float))
+        except Exception:  # pragma: no cover - filet
+            log.exception("Le moniteur a échoué (ignoré) : la décision reste valide.")
 
     # ---------------------------------------------------------------------------------
     def _diagnostics(self, obs: np.ndarray, action: int) -> tuple[np.ndarray, np.ndarray, float]:
@@ -304,4 +337,14 @@ class InferenceEngine:
             "requests_served": self.n_requests,
             "halted": self.guard.halted,
             "halt_reason": self.guard.halt_reason,
+            "monitoring": self.monitor is not None,
         }
+
+    def status(self) -> Dict[str, Any]:
+        """État de supervision complet — réponse au message `status` de l'EA."""
+        if self.monitor is None:
+            return {"ok": False, "type": "status",
+                    "error": "surveillance désactivée sur ce serveur"}
+        payload = self.monitor.snapshot()
+        payload.update({"ok": True, "type": "status"})
+        return payload

@@ -216,6 +216,42 @@ class LiveConfig:
 
 
 @dataclass
+class MonitorConfig:
+    """Surveillance de production (cahier des charges §17).
+
+    Les seuils par défaut sont ceux du risk management bancaire : on préfère plusieurs
+    fausses alertes par an à un seul incident non détecté. Chaque seuil est réglable,
+    mais aucun n'est désactivable silencieusement : passer une valeur à None consigne
+    explicitement la règle comme « non surveillée » dans le tableau de bord.
+    """
+    enabled: bool = True
+    window: int = 500                    # barres retenues pour les métriques glissantes
+    drift_window: int = 250              # barres retenues pour la comparaison de distribution
+    drift_min_samples: int = 100         # en deçà, aucun verdict de dérive n'est rendu
+    drift_every: int = 25                # cadence de recalcul du verdict de dérive
+    psi_warn: float = 0.10               # seuil industriel « décalage modéré »
+    psi_critical: float = 0.25           # seuil industriel « décalage significatif »
+    max_drifted_features: int = 3        # nombre de features en dérive critique toléré
+    latency_warn_ms: float = 250.0
+    latency_critical_ms: float = 1000.0
+    max_data_age_s: float = 300.0        # au-delà, le flux de prix est considéré mort
+    live_dd_warn: float = 0.08
+    live_dd_critical: float = 0.15
+    sharpe_floor: float = -1.0           # Sharpe glissant en dessous duquel on alerte
+    min_bars_for_performance: int = 120  # pas de jugement de performance avant
+    cost_ratio_warn: float = 1.5         # coûts réalisés / coûts modélisés
+    cost_ratio_critical: float = 2.5
+    regime_change_threshold: float = 0.7 # probabilité de nouvel état déclenchant l'alerte
+    regime_confirm_bars: int = 3         # barres de confirmation avant d'acter le changement
+    delta_sharpe: float = 2.0            # chute de Sharpe que la détection doit voir
+    arl0: float = 31_200.0               # budget de fausses alarmes du test séquentiel
+    alert_cooldown_bars: int = 30        # anti-spam : même code d'alerte
+    halt_on_critical: bool = False       # True => une alerte critique arme le coupe-circuit
+    journal_path: Optional[str] = None   # trace d'audit chaînée (None = pas de journal)
+    dashboard_path: Optional[str] = None
+
+
+@dataclass
 class Config:
     data: DataConfig = field(default_factory=DataConfig)
     features: FeatureConfig = field(default_factory=FeatureConfig)
@@ -226,6 +262,7 @@ class Config:
     validation: ValidationConfig = field(default_factory=ValidationConfig)
     risk: RiskConfig = field(default_factory=RiskConfig)
     live: LiveConfig = field(default_factory=LiveConfig)
+    monitor: MonitorConfig = field(default_factory=MonitorConfig)
     seed: int = 42
     run_name: str = "qbot"
 
@@ -298,7 +335,8 @@ def _build(dc_type, raw: Any):
     for name, sub in list(kwargs.items()):
         annotation = str(type_map[name].type)
         for sub_cls in (DataConfig, FeatureConfig, CostConfig, EnvConfig, AgentConfig,
-                        TrainConfig, ValidationConfig, RiskConfig, LiveConfig):
+                        TrainConfig, ValidationConfig, RiskConfig, LiveConfig,
+                        MonitorConfig):
             if sub_cls.__name__ in annotation and isinstance(sub, dict):
                 kwargs[name] = _build(sub_cls, sub)
     return dc_type(**kwargs)
@@ -307,4 +345,5 @@ def _build(dc_type, raw: Any):
 __all__ = [
     "Config", "DataConfig", "FeatureConfig", "CostConfig", "EnvConfig",
     "AgentConfig", "TrainConfig", "ValidationConfig", "RiskConfig", "LiveConfig",
+    "MonitorConfig",
 ]

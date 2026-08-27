@@ -261,7 +261,80 @@ faux positif (déployer une stratégie perdante) dépasse largement celui d'un f
 
 ---
 
-## 8. Ce que ce système ne fait pas
+## 8. La surveillance arrive toujours trop tard — sauf si on surveille la cause
+
+Une fois le modèle en production, la question devient : **comment sais-je que ça marche
+encore ?** La réponse naïve — « je regarde le Sharpe » — se heurte au même rapport
+signal/bruit que la section 1, mais en pire, parce qu'on n'a cette fois qu'une seule
+trajectoire et qu'elle avance en temps réel.
+
+### Le chiffre à retenir
+
+Mesure sur ce dépôt, barres horaires, stratégie passant d'un Sharpe de 1.2 à −1.5 :
+
+| Durée observée | Détection par la performance |
+|---|---|
+| 300 barres (~2 semaines) | 10 % |
+| 3 000 barres (~5 mois) | 68 % |
+| 6 240 barres (**1 an**) | 93 % |
+
+**Un an pour prouver l'effondrement.** Et l'enveloppe de ce qui est « normal » est
+gigantesque à court terme : pour un backtest à Sharpe 1.2, l'intervalle attendu à
+300 barres va de **−5.8 à +9.4**. Un Sharpe live de −2 y est parfaitement compatible.
+
+Deux conséquences pratiques :
+
+1. **Couper une stratégie après deux semaines, c'est décider sur du bruit.** Dans les deux
+   sens : la garder parce qu'elle gagne aussi.
+2. **Il faut surveiller autre chose que le résultat.** Non pas parce que le résultat ne
+   compte pas — c'est le seul juge — mais parce qu'il répond trop tard.
+
+### Surveiller la cause, pas seulement l'effet
+
+| Ce qu'on surveille | Délai de détection | Nature |
+|---|---|---|
+| comportement du bot | immédiat | il ne fait plus ce qu'il faisait |
+| coûts d'exécution réels | ~50 exécutions | le backtest était optimiste |
+| dérive des features | ~250 barres | le marché n'est plus le même |
+| performance | ~1 an | confirmation finale |
+
+Les trois premières lignes préviennent pendant que la quatrième accumule des données.
+C'est l'architecture de `qbot/monitoring/`, détaillée dans
+**[SUPERVISION.md](SUPERVISION.md)**.
+
+### Trois pièges qui annulent la surveillance sans rien casser
+
+Ils méritent d'être nommés, parce qu'ils produisent un dispositif *qui a l'air de
+fonctionner* :
+
+- **Ignorer l'autocorrélation.** 250 barres horaires ne valent que ~13 observations
+  indépendantes quand ρ₁ = 0.9. Un test de Kolmogorov-Smirnov brut déclare alors une
+  dérive significative en permanence. Conséquence réelle : l'équipe coupe les alertes, y
+  compris celles qui comptaient.
+- **Un détecteur séquentiel qui réapprend sa moyenne.** Le Page-Hinkley adaptatif *suit*
+  la dégradation au lieu de la signaler : sa référence glisse avec la série. Il reste muet
+  pendant l'effondrement, en toute logique et en toute inutilité. Pour la performance, la
+  référence doit venir du backtest et rester fixe.
+- **Une référence de dérive recalculée en continu.** Comparer la fenêtre live aux 250
+  barres précédentes ne détecte qu'un choc brutal ; une dérive lente sur six mois passe
+  inaperçue puisque la référence dérive avec elle. La référence se fige à l'entraînement
+  et se version avec le modèle.
+
+### Calibrer, pas deviner
+
+Un détecteur dont on n'a pas mesuré le taux de fausses alarmes n'est pas un détecteur.
+Le seuil λ du Page-Hinkley est ici résolu numériquement à partir du budget de fausses
+alarmes souhaité (approximation de Siegmund du temps moyen avant alarme), et la valeur
+par défaut sort d'une mesure du compromis puissance / fausses alarmes — pas d'une
+convention recopiée.
+
+Corollaire utile : `expected_delay()` dit combien de barres il faudra en moyenne. Si ce
+délai dépasse votre horizon de décision, ce n'est pas ce détecteur qui protégera le
+compte, et il vaut mieux le savoir avant que pendant.
+
+---
+
+## 9. Ce que ce système ne fait pas
 
 Une liste honnête vaut mieux qu'une promesse.
 
@@ -277,7 +350,7 @@ Une liste honnête vaut mieux qu'une promesse.
 - **Il ne remplace pas l'exécution.** Slippage réel, requotes, gaps de week-end et
   élargissements de spread sur annonce sont approximés, pas reproduits.
 
-## 9. Les erreurs qui coûtent le plus cher
+## 10. Les erreurs qui coûtent le plus cher
 
 1. **Regarder le test plus d'une fois.** Chaque consultation le transforme en jeu de
    validation, et le chiffre rapporté devient un estimateur biaisé.
@@ -306,3 +379,19 @@ Une liste honnête vaut mieux qu'une promesse.
 - Fortunato et al., *Noisy Networks for Exploration* (2017).
 - Politis & Romano, *The Stationary Bootstrap* (1994).
 - White, *A Reality Check for Data Snooping* (2000).
+- Griveau-Billion, Richard & Roncalli, *A Fast Algorithm for Computing High-Dimensional
+  Risk Parity Portfolios* (2013) — descente par coordonnées cycliques.
+
+**Surveillance de production (§17)**
+
+- Page, *Continuous Inspection Schemes* (1954) — le test séquentiel.
+- Siegmund, *Sequential Analysis* (1985) — approximation de l'ARL, utilisée ici pour
+  calibrer λ à partir du budget de fausses alarmes.
+- Perold, *The Implementation Shortfall: Paper versus Reality* (1988) — la mesure de coût
+  d'exécution non manipulable.
+- Bayley & Hammersley, *The "Effective" Number of Independent Observations* (1946) —
+  correction d'autocorrélation des tests à deux échantillons.
+- Kullback & Leibler (1951) ; Lin, *Divergence Measures Based on the Shannon Entropy*
+  (1991) — KL et Jensen-Shannon, dont dérivent le PSI et le score global de dérive.
+- ESMA, *Règlement délégué (UE) 2017/589 (MiFID II RTS 6)* — obligations de traçabilité
+  et de conservation applicables au trading algorithmique.

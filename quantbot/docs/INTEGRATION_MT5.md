@@ -117,6 +117,47 @@ ancienne à la plus récente, **barres clôturées uniquement**.
 | `status` | `ok` / `throttled` (réduit) / `blocked` (pas de nouvelle position) / `liquidate` (tout fermer). |
 | `cvar` | CVaR 10 % du retour par action — visibilité directe sur le risque de queue. |
 
+### Messages de supervision
+
+| Message | Réponse | Coût |
+|---|---|---|
+| `{"type":"status"}` | instantané complet : métriques, dérive, coûts, alertes, journal | quelques ms |
+| `{"type":"alerts"}` | historique et résumé des alertes seulement | négligeable |
+
+La séparation d'avec `info` est volontaire : `info` décrit la **configuration** (stable,
+interrogée une fois à la connexion), `status` décrit l'**état vivant** et coûte plus cher
+à produire. L'EA interroge `status` toutes les `InpStatusEveryBars` barres — 24 par
+défaut, soit une fois par jour en H1 — et jamais à chaque tick.
+
+La réponse `status` contient un **résumé à plat, à clés uniques**, destiné à l'analyseur
+JSON minimal de l'EA :
+
+```json
+{"ok": true, "type": "status",
+ "drift_status": "critique", "drift_critical": 4, "drift_worst": "vol_ratio_short_long",
+ "alert_count": 20, "alert_worst": "critical",
+ "recon_verdict": "conforme à l'attendu",
+ "tca_verdict": "COÛTS RÉELS ≫ MODÈLE (significatif)", "tca_ratio": 2.54,
+ "journal_ok": true, "sharpe_rolling": -0.55, "drawdown": -0.0287, ...}
+```
+
+Ces clés existent parce que l'EA n'embarque ni bibliothèque JSON ni DLL : son analyseur
+cherche une clé n'importe où dans la chaîne. Une clé comme `status`, présente à la fois
+dans le bloc dérive et dans le bloc réconciliation, lui renverrait la première trouvée —
+c'est-à-dire au hasard. On expose donc des noms uniques plutôt que de complexifier l'EA.
+
+Paramètres correspondants dans l'EA :
+
+| Paramètre | Défaut | Effet |
+|---|---|---|
+| `InpStatusEveryBars` | 24 | cadence d'interrogation (0 = jamais) |
+| `InpShowPanel` | true | panneau de supervision affiché sur le graphique |
+| `InpBlockOnCritical` | **false** | bloquer le renforcement sur alerte critique serveur |
+
+`InpBlockOnCritical` bloque le **renforcement**, jamais la réduction : un mode de sécurité
+qui empêcherait aussi de fermer serait plus dangereux que le problème qu'il traite. Faux
+par défaut — on l'active après avoir observé le comportement des alertes en dry-run.
+
 Autres types de message : `ping`, `info` (métadonnées du modèle), `reset_guard`
 (réarmement manuel du coupe-circuit après intervention).
 

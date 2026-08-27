@@ -9,6 +9,28 @@ _FX_HOURS_PER_YEAR = 24 * 5 * 52.0
 _EQUITY_DAYS_PER_YEAR = 252.0
 
 
+_TIMEFRAME_MINUTES = {"M1": 1, "M5": 5, "M15": 15, "M30": 30, "H1": 60, "H2": 120,
+                      "H4": 240, "H8": 480, "D1": 1440, "W1": 10080, "MN1": 43200}
+
+
+def bars_per_year_for_timeframe(timeframe: str, asset_class: str = "fx") -> float:
+    """Barres par an déduites d'un libellé de timeframe MT5 ("H1", "M15"…).
+
+    Utile quand aucune série n'est disponible — au démarrage d'un serveur, par exemple,
+    où la configuration est connue mais pas encore les données. Un timeframe inconnu
+    retombe sur la convention actions (252), et c'est délibérément visible : un facteur
+    d'annualisation faux se propage à TOUTES les métriques annualisées sans jamais
+    déclencher d'erreur.
+    """
+    minutes = _TIMEFRAME_MINUTES.get(str(timeframe).upper())
+    if minutes is None:
+        return _EQUITY_DAYS_PER_YEAR
+    if minutes >= 1440:
+        return _EQUITY_DAYS_PER_YEAR * (1440.0 / minutes)
+    hours_per_year = _FX_HOURS_PER_YEAR if asset_class == "fx" else _EQUITY_DAYS_PER_YEAR * 6.5
+    return max(hours_per_year * 60.0 / minutes, 1.0)
+
+
 def infer_bars_per_year(index: pd.DatetimeIndex, asset_class: str = "fx") -> float:
     """Estime le nombre de barres par an à partir de l'espacement médian de l'index."""
     if not isinstance(index, pd.DatetimeIndex) or len(index) < 3:
