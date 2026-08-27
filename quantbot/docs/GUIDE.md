@@ -87,6 +87,35 @@ problème est dans l'installation, pas dans vos données.
 
 ## 3. Le tour du propriétaire en 5 minutes
 
+### Une seule commande, du début à la fin
+
+**Windows** — double-cliquez sur `DEMARRER.bat`.
+**macOS / Linux** — `bash demarrer.sh`
+
+Elle enchaîne les six étapes et **ouvre un rapport dans votre navigateur** :
+
+```
+ÉTAPE 1/6  Les données          télécharge un historique EURUSD si vous n'en avez pas
+ÉTAPE 2/6  Le mur des coûts     combien il faut produire juste pour couvrir les frais
+ÉTAPE 3/6  La sonde             y a-t-il seulement un signal ?
+ÉTAPE 4/6  Le criblage          les stratégies classiques survivent-elles aux frais ?
+ÉTAPE 5/6  L'agent              entraînement sur les données anciennes
+ÉTAPE 6/6  Le verdict           1 000 € sur une période jamais vue, + intervalle de confiance
+```
+
+Options utiles :
+
+```bash
+bash demarrer.sh --rapide                  # entraînement écourté, ~5 min
+bash demarrer.sh --csv mes_donnees.csv     # vos propres données MetaTrader
+bash demarrer.sh --capital 5000            # capital simulé
+```
+
+Le rapport final tient en un fichier HTML autonome : il s'ouvre d'un double-clic,
+fonctionne hors ligne, s'archive, et aucune donnée ne sort de votre machine.
+
+### Ou le pipeline de démonstration
+
 ```bash
 python scripts/demo.py
 ```

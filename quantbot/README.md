@@ -26,9 +26,34 @@ pas une hypothèse — il est vérifié par simulation dans les tests de ce dép
 
 ## Démarrage
 
-```bash
-pip install -r requirements.txt
+### La façon la plus simple : une seule commande
 
+**Windows** — double-cliquez sur `DEMARRER.bat`.
+
+**macOS / Linux** :
+
+```bash
+bash demarrer.sh
+```
+
+Ça installe les bibliothèques, télécharge un historique EURUSD horaire si vous n'en avez
+pas, mesure s'il existe un signal, crible les stratégies classiques, entraîne l'agent,
+l'évalue sur une période qu'il n'a jamais vue, puis **ouvre un rapport HTML dans votre
+navigateur**. Comptez 10 à 20 minutes.
+
+```bash
+bash demarrer.sh --rapide                    # entraînement écourté, ~5 min
+bash demarrer.sh --csv mes_donnees.csv       # vos propres données
+bash demarrer.sh --capital 5000              # capital simulé
+```
+
+Le rapport répond à une seule question, chiffres à l'appui : **si j'avais placé cette
+somme sur la période de test, qu'est-ce que ça aurait donné — et cet écart est-il
+distinguable du hasard ?**
+
+### En détail, étape par étape
+
+```bash
 # Démonstration complète (données synthétiques, ~5 min) :
 # données -> features -> entraînement RL -> backtest -> validation -> pont live
 python scripts/demo.py
