@@ -68,6 +68,40 @@ Le rapport répond à une seule question, chiffres à l'appui : **si j'avais pla
 somme sur la période de test, qu'est-ce que ça aurait donné — et cet écart est-il
 distinguable du hasard ?**
 
+### Brancher le bot sur MetaTrader 5
+
+Le rapport HTML répond à « est-ce que ça marche ? ». Une fois cette question tranchée,
+voici comment le bot passe des ordres sur un compte réel.
+
+**Le bot ne pilote pas MetaTrader de l'extérieur.** C'est l'inverse : un Expert Advisor
+installé *dans* MetaTrader appelle le bot à chaque nouvelle bougie et lui demande quelle
+exposition viser. MetaTrader garde la main sur l'exécution ; Python n'a que la décision.
+
+```
+    MetaTrader 5                          fenêtre de commande
+    ┌────────────────────┐                ┌──────────────────────┐
+    │  QBotBridge (EA)   │ ──1200 barres─▶│  serveur d'inférence │
+    │  passe les ordres  │ ◀──exposition──│  le modèle entraîné  │
+    └────────────────────┘   TCP 8912     └──────────────────────┘
+```
+
+Sur Windows, double-cliquez sur **`CONNECTER_MT5.bat`**. Ou, en ligne de commande :
+
+```bash
+python scripts/mt5.py installer   # copie l'EA dans MetaTrader et détaille la suite
+python scripts/mt5.py tester      # prouve que la chaîne répond, SANS MetaTrader
+python scripts/mt5.py demarrer    # lance le serveur ; laisser la fenêtre ouverte
+```
+
+`tester` est l'outil de diagnostic : il rejoue depuis Python le dialogue exact de l'EA.
+S'il passe et que MetaTrader échoue quand même, le problème est dans MetaTrader
+(autorisation `127.0.0.1`, ou compilation) — pas dans le modèle.
+
+**Deux verrous indépendants, fermés par défaut**, qu'il faut lever tous les deux pour
+qu'un ordre parte : `InpDryRun = true` côté EA, et l'absence de `--reel` côté serveur.
+Voir [`docs/INTEGRATION_MT5.md`](docs/INTEGRATION_MT5.md) pour le protocole et l'ordre
+de mise en production.
+
 ### En détail, étape par étape
 
 ```bash

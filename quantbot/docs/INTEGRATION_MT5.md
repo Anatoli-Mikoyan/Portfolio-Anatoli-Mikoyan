@@ -32,6 +32,31 @@ courtier (30 à 200 ms).
 
 ## Installation
 
+### 0. Le chemin court
+
+Trois commandes couvrent tout ce que décrivent les sections 1 et 2 ci-dessous :
+
+```bash
+python scripts/mt5.py installer    # trouve le dossier de données MetaTrader, copie l'EA
+python scripts/mt5.py tester       # rejoue le dialogue de l'EA depuis Python
+python scripts/mt5.py demarrer     # lance le serveur (dry-run)
+```
+
+`installer` explore `%APPDATA%\MetaQuotes\Terminal\<empreinte>\MQL5\Experts` —
+l'empreinte de 32 caractères ne peut pas être devinée, seulement trouvée — et copie l'EA
+dans chaque terminal détecté. Il ne peut pas compiler à votre place ni cocher
+l'autorisation réseau : MetaTrader n'expose aucune interface pour cela, et ces deux
+étapes restent manuelles.
+
+`tester` sert au diagnostic. Il monte le serveur, ouvre une connexion, envoie un
+historique de la bonne taille et vérifie la réponse — exactement ce que fait l'EA. Il
+départage la seule question utile quand rien ne marche : **le problème est-il côté
+Python ou côté MetaTrader ?**
+
+Les sections suivantes détaillent ce que ces commandes font, pour qui veut le faire
+à la main ou comprendre ce qui se passe.
+
+
 ### 1. Côté Python
 
 ```bash
