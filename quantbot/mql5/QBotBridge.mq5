@@ -352,6 +352,22 @@ bool SendAndReceive(const string request, string &response)
 //====================================================================
 //  CONSTRUCTION DE LA REQUÊTE
 //====================================================================
+//+------------------------------------------------------------------+
+//| Nature du compte connecté : demo, concours ou réel.              |
+//|                                                                  |
+//| Transmise au serveur pour qu'il puisse refuser d'armer les ordres |
+//| sur un compte réel sans autorisation explicite. Le terminal est   |
+//| la seule source fiable de cette information : ni le solde, ni le  |
+//| nom du courtier ne permettent de distinguer une démo d'un réel.   |
+//+------------------------------------------------------------------+
+string AccountTypeName()
+{
+   long mode = AccountInfoInteger(ACCOUNT_TRADE_MODE);
+   if(mode == ACCOUNT_TRADE_MODE_DEMO)    return("demo");
+   if(mode == ACCOUNT_TRADE_MODE_CONTEST) return("contest");
+   return("real");
+}
+
 string BuildPredictRequest()
 {
    MqlRates rates[];
@@ -379,6 +395,7 @@ string BuildPredictRequest()
    sb += "\"bars_in_position\":" + IntegerToString(g_barsInPos) + ",";
    sb += "\"entry_price\":" + DoubleToString(g_entryPrice, _Digits) + ",";
    sb += "\"magic\":" + IntegerToString((int)InpMagic) + ",";
+   sb += "\"account_type\":\"" + AccountTypeName() + "\",";
    sb += "\"bars\":[";
 
    for(int i = 0; i < copied; i++)

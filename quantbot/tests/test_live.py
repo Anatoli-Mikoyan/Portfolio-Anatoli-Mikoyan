@@ -1,6 +1,8 @@
 """Tests du pont live : cadrage TCP, aller-retour serveur, parité avec le backtest."""
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -284,3 +286,104 @@ def test_replay_mode_keeps_every_other_guard(trained):
     resp = engine.predict(_stale_request(df, engine))
     assert resp.target_exposure == 0.0
     assert any("spread" in r for r in resp.reasons)
+
+
+# ---------------------------------------------------------------------------------------
+# Verrou de compte : démo autorisée, compte réel bloqué
+#
+# Pour voir la chaîne produire de vraies écritures il faut armer les ordres — sinon
+# l'historique reste vide et il n'y a rien à observer. Mais « ordres armés » ne dit
+# rien du compte au bout du fil : un profil MetaTrader ouvert sur le mauvais compte
+# suffit à transformer une répétition en engagement d'argent réel. L'EA transmet donc
+# la nature du compte (ACCOUNT_TRADE_MODE, seule source fiable : ni le solde ni le nom
+# du courtier ne la donnent) et le serveur la vérifie à CHAQUE décision.
+# ---------------------------------------------------------------------------------------
+def _requete_compte(df: pd.DataFrame, engine, compte: str, expo: float = 0.0) -> dict:
+    msg = {"type": "predict", "symbol": "EURUSD", "timeframe": "H1",
+           "bars": _bars(df, engine.min_bars), "equity": 10_000.0,
+           "balance": 10_000.0, "current_exposure": expo}
+    if compte is not None:
+        msg["account_type"] = compte
+    return msg
+
+
+def _moteur(model_dir, **kwargs):
+    from qbot.live.engine import InferenceEngine, load_bundle
+    return InferenceEngine(load_bundle(model_dir), replay=True, **kwargs)
+
+
+def test_real_account_is_blocked_by_default(trained):
+    """Ordres armés sans autorisation explicite : aucune ouverture sur un compte réel."""
+    model_dir, df = trained
+    engine = _moteur(model_dir, dry_run=False, allow_real_account=False)
+    resp = engine.predict(_requete_compte(df, engine, "real"))
+    assert resp.target_exposure == 0.0
+    assert any("compte RÉEL" in r for r in resp.reasons)
+
+
+def test_demo_account_may_trade_when_orders_are_armed(trained):
+    """La démo doit pouvoir trader : c'est tout l'intérêt de la phase d'essai."""
+    model_dir, df = trained
+    engine = _moteur(model_dir, dry_run=False, allow_real_account=False)
+    resp = engine.predict(_requete_compte(df, engine, "demo"))
+    assert resp.ok
+    assert not any("compte RÉEL" in r for r in resp.reasons)
+    assert not any("dry_run" in r for r in resp.reasons)
+
+
+def test_real_account_allowed_when_explicitly_authorised(trained):
+    model_dir, df = trained
+    engine = _moteur(model_dir, dry_run=False, allow_real_account=True)
+    resp = engine.predict(_requete_compte(df, engine, "real"))
+    assert resp.ok
+    assert not any("compte RÉEL" in r for r in resp.reasons)
+
+
+def test_dry_run_still_wins_over_an_authorised_real_account(trained):
+    """Le premier verrou prime : sans ordres armés, rien ne passe, démo comprise."""
+    model_dir, df = trained
+    engine = _moteur(model_dir, dry_run=True, allow_real_account=True)
+    resp = engine.predict(_requete_compte(df, engine, "demo"))
+    assert resp.target_exposure == 0.0
+    assert any("dry_run" in r for r in resp.reasons)
+
+
+def test_account_lock_never_prevents_closing(trained):
+    """Un verrou qui empêcherait de SORTIR serait pire que pas de verrou du tout."""
+    model_dir, df = trained
+    engine = _moteur(model_dir, dry_run=False, allow_real_account=False)
+    resp = engine.predict(_requete_compte(df, engine, "real", expo=0.4))
+    assert abs(resp.target_exposure) <= 0.4 + 1e-9, (
+        "le verrou a laissé renforcer une position sur un compte réel")
+
+
+def test_missing_account_type_is_not_treated_as_real(trained):
+    """Un EA antérieur n'envoie pas le champ ; il ne doit pas être bloqué pour autant.
+
+    Le verrou vise le cas identifié « compte réel ». Traiter l'absence d'information
+    comme un compte réel casserait les installations existantes sans rien protéger de
+    plus : l'EA fourni, lui, renseigne toujours le champ, ce que vérifie le test suivant.
+    """
+    model_dir, df = trained
+    engine = _moteur(model_dir, dry_run=False, allow_real_account=False)
+    resp = engine.predict(_requete_compte(df, engine, None))
+    assert resp.ok
+    assert not any("compte RÉEL" in r for r in resp.reasons)
+
+
+def test_account_type_surfaces_in_info(trained):
+    model_dir, df = trained
+    engine = _moteur(model_dir, dry_run=False, allow_real_account=False)
+    assert engine.info()["account_type"] == "unknown"
+    engine.predict(_requete_compte(df, engine, "demo"))
+    assert engine.info()["account_type"] == "demo"
+    assert engine.info()["allow_real_account"] is False
+
+
+def test_expert_advisor_sends_the_account_type():
+    """Le verrou serveur ne vaut que si l'EA renseigne réellement le champ."""
+    source = (Path(__file__).resolve().parent.parent / "mql5" / "QBotBridge.mq5").read_text(
+        encoding="utf-8", errors="replace")
+    assert '\\"account_type\\"' in source, "l'EA n'envoie pas account_type"
+    assert "ACCOUNT_TRADE_MODE" in source, (
+        "le type de compte doit venir du terminal, pas d'une heuristique sur le solde")

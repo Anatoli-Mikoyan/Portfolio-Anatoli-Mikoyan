@@ -78,7 +78,8 @@ class InferenceEngine:
 
     def __init__(self, bundle: ModelBundle, risk_cfg: Optional[RiskConfig] = None,
                  cvar_alpha: Optional[float] = None, dry_run: bool = True,
-                 monitor: Optional["LiveMonitor"] = None, replay: bool = False):
+                 monitor: Optional["LiveMonitor"] = None, replay: bool = False,
+                 allow_real_account: bool = False):
         self.bundle = bundle
         # La surveillance est OPTIONNELLE et branchée en AVAL de la décision : elle
         # observe ce qui a été décidé, elle n'y participe pas. Un moniteur absent, ou en
@@ -105,6 +106,15 @@ class InferenceEngine:
         self.guard = RiskGuard(risk_cfg or bundle.config.risk)
         self.cvar_alpha = cvar_alpha
         self.dry_run = dry_run
+
+        # Verrou de compte. Le mode « ordres armés » sert d'abord à faire tourner le
+        # système sur une DÉMO : c'est le seul moyen de voir la chaîne complète produire
+        # de vraies écritures. Rien n'empêcherait alors le même serveur de trouver au
+        # bout du fil un compte réel — un terminal ouvert sur le mauvais profil suffit.
+        # L'EA transmet donc la nature du compte, et l'engagement d'argent réel exige
+        # une autorisation distincte de l'armement des ordres.
+        self.allow_real_account = bool(allow_real_account)
+        self._account_seen: str = ""
         self.n_requests = 0
         self.last_decision: Optional[PredictResponse] = None
 
@@ -250,11 +260,29 @@ class InferenceEngine:
             reasons = list(decision.reasons)
             if self.replay:
                 reasons.append(f"replay : fraîcheur ignorée (barre vieille de {data_age:.0f}s)")
-            if self.dry_run and abs(exposure) > abs(float(msg.get("current_exposure", 0.0))):
-                # En dry-run on autorise la RÉDUCTION d'exposition mais jamais l'ouverture :
-                # un mode simulation qui empêcherait aussi de fermer serait dangereux.
+            compte = str(msg.get("account_type", "unknown")).lower()
+            if compte and compte != self._account_seen:
+                self._account_seen = compte
+                if compte == "demo":
+                    log.info("Compte DÉMO détecté : argent fictif.")
+                elif compte == "contest":
+                    log.info("Compte CONCOURS détecté : argent fictif.")
+                elif compte == "real":
+                    log.warning("*** COMPTE RÉEL DÉTECTÉ *** — de l'argent véritable est "
+                                "engagé sur ce compte.")
+
+            # Blocage identique au dry-run : on n'ouvre ni ne renforce, mais on laisse
+            # toujours réduire et fermer. Une position déjà ouverte doit pouvoir sortir.
+            bloque = None
+            if self.dry_run:
+                bloque = "dry_run : ouverture/renforcement bloqué"
+            elif compte == "real" and not self.allow_real_account:
+                bloque = ("compte RÉEL sans autorisation explicite : ouverture bloquée "
+                          "(relancer avec --argent-reel pour l'autoriser)")
+
+            if bloque and abs(exposure) > abs(float(msg.get("current_exposure", 0.0))):
                 exposure = float(msg.get("current_exposure", 0.0))
-                reasons.append("dry_run : ouverture/renforcement bloqué")
+                reasons.append(bloque)
 
             atr = self._atr(df)
             resp = PredictResponse(
@@ -359,6 +387,8 @@ class InferenceEngine:
             "min_bars": self.min_bars,
             "positions": self.bundle.positions.tolist(),
             "dry_run": self.dry_run,
+            "allow_real_account": self.allow_real_account,
+            "account_type": self._account_seen or "unknown",
             "replay": self.replay,
             "requests_served": self.n_requests,
             "halted": self.guard.halted,

@@ -54,6 +54,7 @@ class PredictRequest:
     bars_in_position: int = 0
     entry_price: Optional[float] = None
     magic: int = 0
+    account_type: str = "unknown"           # demo | contest | real, tel que vu par le terminal
     type: str = "predict"
     version: str = PROTOCOL_VERSION
 

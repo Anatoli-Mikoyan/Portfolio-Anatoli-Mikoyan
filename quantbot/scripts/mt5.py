@@ -25,11 +25,16 @@ Les deux doivent tourner en même temps, sur la même machine. Si vous fermez la
 fenêtre noire, l'EA ne reçoit plus de réponse et reste à plat : il ne prend pas
 de décision tout seul, il n'en est pas capable — il ne contient aucune stratégie.
 
-Sécurité : deux verrous indépendants, tous les deux fermés par défaut.
-  - Côté MetaTrader : InpDryRun = true  → l'EA n'envoie aucun ordre.
-  - Côté Python     : pas de --reel     → le serveur refuse toute ouverture.
-Il faut lever les DEUX pour qu'un ordre parte. Ce n'est pas une précaution
-décorative : voir le verdict des tests avant d'y toucher.
+Sécurité : trois verrous, tous fermés par défaut.
+  - Côté MetaTrader : InpDryRun = true   → l'EA n'envoie aucun ordre.
+  - Côté Python     : pas de --ordres    → le serveur refuse toute ouverture.
+  - Côté compte     : pas de --argent-reel → même ordres armés, un compte RÉEL
+                      reste bloqué ; l'EA transmet la nature du compte et le
+                      serveur la vérifie à chaque décision.
+
+Les deux premiers se lèvent ensemble pour faire tourner une DÉMO : c'est le
+seul moyen de voir la chaîne produire de vraies écritures, avec de l'argent
+fictif. Le troisième est ce qui sépare la démo de votre argent.
 """
 from __future__ import annotations
 
@@ -284,7 +289,7 @@ def tester(modele: Path, port: int) -> int:
 # =======================================================================================
 # Serveur
 # =======================================================================================
-def demarrer(modele: Path, port: int, reel: bool, rejeu: bool) -> int:
+def demarrer(modele: Path, port: int, ordres: bool, argent_reel: bool, rejeu: bool) -> int:
     titre("SERVEUR D'INFÉRENCE")
 
     if not modele.exists():
@@ -316,9 +321,16 @@ def demarrer(modele: Path, port: int, reel: bool, rejeu: bool) -> int:
 
     configure_logging(logging.INFO)
 
-    if reel:
+    # --argent-reel n'a aucun sens sans --ordres : le signaler plutôt que de laisser
+    # croire que le trading est armé.
+    if argent_reel and not ordres:
+        attention("--argent-reel ignoré : il faut aussi --ordres pour armer le trading.")
+        argent_reel = False
+
+    if argent_reel:
         print()
-        attention("MODE RÉEL : le serveur autorisera de VRAIES ouvertures de position.")
+        attention("ARGENT RÉEL AUTORISÉ : si le terminal au bout du fil est un compte")
+        attention("réel, le serveur le laissera ouvrir des positions.")
         attention("Rappel des mesures faites sur ce modèle : 1 000 € sur un an ont donné")
         attention("795,98 € sur données EURUSD réelles, intervalle de confiance")
         attention("entièrement négatif. Ce n'est pas de la malchance, c'est le résultat.")
@@ -327,26 +339,40 @@ def demarrer(modele: Path, port: int, reel: bool, rejeu: bool) -> int:
             reponse = input("  Tapez exactement OUI JE CONFIRME pour continuer : ").strip()
         except EOFError:
             # Pas de terminal : script lancé par double-clic, tâche planifiée, tuyau.
-            # Le seul défaut acceptable ici est de NE PAS armer le trading réel.
+            # Le seul défaut acceptable ici est de NE PAS autoriser l'argent réel.
             reponse = ""
             print("\n  (pas d'entrée interactive disponible)")
         if reponse != "OUI JE CONFIRME":
-            print("  Annulé. Le serveur reste en dry-run.")
-            reel = False
+            print("  Annulé. Les comptes réels resteront bloqués.")
+            argent_reel = False
 
-    mode = "*** RÉEL ***" if reel else "DRY-RUN (aucune ouverture autorisée)"
+    if not ordres:
+        mode = "OBSERVATION — aucun ordre, même en démo"
+    elif argent_reel:
+        mode = "ORDRES ARMÉS — comptes démo ET réels"
+    else:
+        mode = "ORDRES ARMÉS — démo uniquement, comptes réels bloqués"
+
     print()
     ok(f"Modèle    : {modele}")
     ok(f"Écoute    : 127.0.0.1:{port}")
     ok(f"Mode      : {mode}")
+    if not ordres:
+        print()
+        print("      Le bot calcule tout et affiche ses décisions, mais MetaTrader")
+        print("      n'ouvrira rien : votre historique restera vide.")
+        print("      Pour que la démo passe de vrais ordres fictifs :")
+        print("        1. dans l'EA, mettre InpDryRun sur false ;")
+        print("        2. relancer ici avec  --ordres")
     print()
     print("  Laissez cette fenêtre OUVERTE. Chaque bougie, MetaTrader viendra")
     print("  demander quoi faire et la réponse s'affichera ici.")
     print("  Pour arrêter : Ctrl+C (l'EA repassera à plat tout seul).")
     print()
 
-    cfg = LiveConfig(host="127.0.0.1", port=port, model_path=str(modele), dry_run=not reel)
-    serve(modele, cfg, block=True, replay=rejeu)
+    cfg = LiveConfig(host="127.0.0.1", port=port, model_path=str(modele),
+                     dry_run=not ordres)
+    serve(modele, cfg, block=True, replay=rejeu, allow_real_account=argent_reel)
     return 0
 
 
@@ -432,8 +458,12 @@ def main() -> int:
     p.add_argument("--port", type=int, default=PORT_DEFAUT)
     p.add_argument("--dossier", type=str, default=None,
                    help="Chemin du dossier de données MetaTrader, si la détection échoue")
-    p.add_argument("--reel", action="store_true",
-                   help="Désactive le dry-run côté serveur (TRADING RÉEL)")
+    p.add_argument("--ordres", "--reel", action="store_true", dest="ordres",
+                   help="Autorise le passage d'ordres. Sur un compte démo c'est de "
+                        "l'argent fictif ; les comptes réels restent bloqués sans "
+                        "--argent-reel.")
+    p.add_argument("--argent-reel", action="store_true", dest="argent_reel",
+                   help="Lève le blocage des comptes RÉELS. Demande une confirmation.")
     p.add_argument("--rejeu", action="store_true",
                    help="Neutralise le contrôle de fraîcheur, pour tester sur barres passées")
     args = p.parse_args()
@@ -448,7 +478,7 @@ def main() -> int:
             p.error("verdict exige --rapport (dans MetaTrader : Historique > clic droit "
                     "> Rapport > HTML)")
         return verdict(args.rapport, args.capital)
-    return demarrer(modele, args.port, args.reel, args.rejeu)
+    return demarrer(modele, args.port, args.ordres, args.argent_reel, args.rejeu)
 
 
 if __name__ == "__main__":

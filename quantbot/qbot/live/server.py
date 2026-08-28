@@ -151,6 +151,7 @@ def serve(
     block: bool = True,
     monitor: Optional[Any] = None,
     replay: bool = False,
+    allow_real_account: bool = False,
 ) -> InferenceServer:
     """Démarre le serveur d'inférence."""
     live_cfg = live_cfg or LiveConfig()
@@ -159,14 +160,23 @@ def serve(
         monitor = build_monitor(model_dir, bundle)
     engine = InferenceEngine(bundle, risk_cfg or bundle.config.risk,
                              cvar_alpha=cvar_alpha, dry_run=live_cfg.dry_run,
-                             monitor=monitor, replay=replay)
+                             monitor=monitor, replay=replay,
+                             allow_real_account=allow_real_account)
 
     server = InferenceServer(engine, live_cfg.host, live_cfg.port)
-    mode = "DRY-RUN (aucune ouverture de position)" if live_cfg.dry_run else "*** TRADING RÉEL ***"
+    if live_cfg.dry_run:
+        mode = "DRY-RUN (aucune ouverture de position)"
+    elif allow_real_account:
+        mode = "*** ORDRES ARMÉS, COMPTES RÉELS AUTORISÉS ***"
+    else:
+        mode = "ORDRES ARMÉS (démo et concours ; comptes réels bloqués)"
     log.info("Serveur d'inférence sur %s:%d — %s", live_cfg.host, live_cfg.port, mode)
     log.info("L'EA doit envoyer au moins %d barres par requête.", engine.min_bars)
     if monitor is not None:
         log.info("Supervision active — messages `status` et `alerts` disponibles.")
+    if not live_cfg.dry_run and not allow_real_account:
+        log.info("Ordres armés, mais bloqués sur un compte RÉEL : seuls les comptes "
+                 "démo et concours pourront ouvrir des positions.")
     if replay:
         log.warning("*** MODE REJEU *** : répétition générale sur barres passées. "
                     "Le contrôle de fraîcheur du flux est neutralisé.")

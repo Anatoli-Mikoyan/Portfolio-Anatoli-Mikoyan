@@ -8,8 +8,10 @@ REM    1. copie l'Expert Advisor dans votre dossier MetaTrader
 REM    2. verifie que la chaine complete repond (sans MetaTrader)
 REM    3. lance le serveur auquel MetaTrader se connectera
 REM
-REM  Le trading REEL n'est PAS arme par ce fichier. Deux verrous restent
-REM  fermes : InpDryRun=true dans l'EA, et pas de --reel ici.
+REM  L'argent REEL n'est jamais arme par ce fichier : meme en mode "demo
+REM  armee", le serveur refuse d'ouvrir sur un compte reel. Il faut pour
+REM  cela --argent-reel, qui demande une confirmation tapee en toutes
+REM  lettres, et n'est propose nulle part ici.
 REM ======================================================================
 setlocal
 cd /d "%~dp0"
@@ -66,11 +68,37 @@ if errorlevel 1 (
 echo.
 echo --- 3/3 : demarrage du serveur ---------------------------------------
 echo.
+echo   Deux facons de faire tourner le bot :
+echo.
+echo     [O] OBSERVATION - il calcule et affiche ses decisions, mais
+echo         MetaTrader n'ouvre RIEN. Votre historique restera vide.
+echo.
+echo     [D] DEMO ARMEE  - il passe de vrais ordres, avec de l'argent
+echo         FICTIF. C'est ce qu'il faut pour avoir des resultats a lire.
+echo         Les comptes reels restent bloques dans les deux cas.
+echo.
+set "CHOIX="
+set /p CHOIX=  Votre choix - O ou D, defaut O : 
+echo.
+
+REM Comparaison insensible a la casse, et repli sur le mode le plus prudent
+REM pour toute saisie inattendue : un doigt qui derape ne doit pas armer.
+if /I "%CHOIX%"=="D" (
+  echo   Mode DEMO ARMEE.
+  echo   N'oubliez pas : dans les reglages de l'EA, InpDryRun doit etre sur false.
+  echo.
+  set ARGS=--ordres
+) else (
+  echo   Mode OBSERVATION.
+  echo.
+  set ARGS=
+)
+
 echo     LAISSEZ CETTE FENETRE OUVERTE.
 echo     Allez dans MetaTrader et glissez QBotBridge sur un graphique.
 echo     Chaque bougie, la decision s'affichera ici.
 echo.
-python scripts\mt5.py demarrer
+python scripts\mt5.py demarrer %ARGS%
 
 echo.
 echo ======================================================================
