@@ -4,6 +4,7 @@
     python scripts/mt5.py installer    # copie l'EA dans MetaTrader et explique la suite
     python scripts/mt5.py tester       # prouve que la chaîne marche, SANS MetaTrader
     python scripts/mt5.py demarrer     # lance le serveur auquel MetaTrader se connecte
+    python scripts/mt5.py verdict --rapport histo.html   # que valent vos résultats ?
 
 Comment ça marche
 -----------------
@@ -350,12 +351,83 @@ def demarrer(modele: Path, port: int, reel: bool, rejeu: bool) -> int:
 
 
 # =======================================================================================
+# Verdict sur une période de démo
+# =======================================================================================
+def verdict(rapport: str, capital: float) -> int:
+    """Lit l'historique exporté depuis MetaTrader et dit ce qu'il vaut vraiment."""
+    titre("VERDICT SUR VOTRE PÉRIODE DE DÉMO")
+
+    from qbot.live.rapport_mt5 import juger, lire_rapport
+
+    try:
+        hist = lire_rapport(rapport, capital_initial=capital)
+    except (FileNotFoundError, ValueError) as exc:
+        echec(str(exc))
+        return 1
+
+    v = juger(hist)
+    ok(f"{v.n} transactions lues dans {Path(rapport).name}")
+    print()
+    print(f"      résultat total        : {v.total:+.2f}")
+    print(f"      par transaction       : {v.moyenne:+.2f} en moyenne")
+    print(f"      transactions gagnantes: {v.taux_reussite:.1%}")
+    print()
+
+    couleur = {"SIGNIFICATIF": "\033[32m", "PERDANT": "\033[31m"}.get(v.conclusion, "\033[33m")
+    print(f"  {couleur}\033[1m>>> {v.conclusion}\033[0m")
+    print()
+    for ligne in _plier(v.explication, 68):
+        print(f"      {ligne}")
+    print()
+    print("      Et si ces mêmes transactions s'étaient présentées dans un autre")
+    print("      ordre, ou avec un tirage un peu différent ?")
+    print(f"        5e centile {v.ic_bas:+.2f}      95e centile {v.ic_haut:+.2f}")
+    if v.ic_bas < 0 < v.ic_haut:
+        print("        L'intervalle contient zéro : le gain n'est pas établi.")
+    elif v.ic_bas > 0:
+        print("        L'intervalle est entièrement positif.")
+    else:
+        print("        L'intervalle est entièrement négatif.")
+
+    print()
+    print("  " + "─" * (LARGEUR - 2))
+    if v.conclusion == "SIGNIFICATIF":
+        print("  Ce résultat tient statistiquement sur CET échantillon. C'est une")
+        print("  condition nécessaire pour envisager du réel — pas une garantie :")
+        print("  le marché de la période suivante n'est pas tenu de ressembler")
+        print("  à celle-ci.")
+    else:
+        print("  Passer au réel sur cette base, c'est parier sur un chiffre que le")
+        print("  test ne soutient pas. Le manque n'est pas de la patience : c'est")
+        print("  du nombre de transactions.")
+    return 0
+
+
+def _plier(texte: str, largeur: int) -> List[str]:
+    """Coupe un paragraphe en lignes sans casser les mots."""
+    mots, lignes, courante = texte.split(), [], ""
+    for mot in mots:
+        if len(courante) + len(mot) + 1 > largeur:
+            lignes.append(courante)
+            courante = mot
+        else:
+            courante = f"{courante} {mot}".strip()
+    if courante:
+        lignes.append(courante)
+    return lignes
+
+
+# =======================================================================================
 def main() -> int:
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("action", choices=["installer", "tester", "demarrer"],
+    p.add_argument("action", choices=["installer", "tester", "demarrer", "verdict"],
                    help="installer : copie l'EA | tester : vérifie sans MetaTrader | "
-                        "demarrer : lance le serveur")
+                        "demarrer : lance le serveur | verdict : juge une période de démo")
+    p.add_argument("--rapport", type=str, default=None,
+                   help="Rapport d'historique exporté depuis MetaTrader (HTML ou CSV)")
+    p.add_argument("--capital", type=float, default=0.0,
+                   help="Capital de départ du compte démo")
     p.add_argument("--modele", type=str, default=str(MODELE_DEFAUT))
     p.add_argument("--port", type=int, default=PORT_DEFAUT)
     p.add_argument("--dossier", type=str, default=None,
@@ -371,6 +443,11 @@ def main() -> int:
         return installer_ea(args.dossier)
     if args.action == "tester":
         return tester(modele, args.port)
+    if args.action == "verdict":
+        if not args.rapport:
+            p.error("verdict exige --rapport (dans MetaTrader : Historique > clic droit "
+                    "> Rapport > HTML)")
+        return verdict(args.rapport, args.capital)
     return demarrer(modele, args.port, args.reel, args.rejeu)
 
 
