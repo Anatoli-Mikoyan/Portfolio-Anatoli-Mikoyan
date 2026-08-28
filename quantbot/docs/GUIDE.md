@@ -89,8 +89,17 @@ problème est dans l'installation, pas dans vos données.
 
 ### Une seule commande, du début à la fin
 
-**Windows** — double-cliquez sur `DEMARRER.bat`.
+**Windows** — ouvrez PowerShell et collez :
+
+```powershell
+irm https://raw.githubusercontent.com/Anatoli-Mikoyan/Portfolio-Anatoli-Mikoyan/refs/heads/claude/algorithmic-trading-bot-dql-hjyjok/quantbot/install.ps1 | iex
+```
+
 **macOS / Linux** — `bash demarrer.sh`
+
+Le script Windows installe Python via winget s'il manque, télécharge le projet dans
+`%USERPROFILE%\QBot`, installe les dépendances, et laisse un raccourci `qbot.cmd`
+pour les fois suivantes.
 
 Elle enchaîne les six étapes et **ouvre un rapport dans votre navigateur** :
 

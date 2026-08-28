@@ -26,15 +26,32 @@ pas une hypothèse — il est vérifié par simulation dans les tests de ce dép
 
 ## Démarrage
 
-### La façon la plus simple : une seule commande
+### Windows — une seule commande
 
-**Windows** — double-cliquez sur `DEMARRER.bat`.
+Ouvrez **PowerShell** (touche Windows, tapez « powershell », Entrée) et collez :
 
-**macOS / Linux** :
+```powershell
+irm https://raw.githubusercontent.com/Anatoli-Mikoyan/Portfolio-Anatoli-Mikoyan/refs/heads/claude/algorithmic-trading-bot-dql-hjyjok/quantbot/install.ps1 | iex
+```
+
+Elle installe Python si besoin, télécharge le projet dans `%USERPROFILE%\QBot`,
+installe les dépendances, lance l'analyse et **ouvre le rapport dans votre
+navigateur**. Rien d'autre n'est modifié sur la machine.
+
+Pour relancer plus tard : double-cliquez sur `%USERPROFILE%\QBot\qbot.cmd`.
+
+> Le script est lisible avant exécution — ouvrez simplement l'URL dans un navigateur.
+> Ne collez jamais une commande de ce type sans savoir ce qu'elle contient.
+
+### macOS / Linux
 
 ```bash
 bash demarrer.sh
 ```
+
+### Ou, sur Windows, sans PowerShell
+
+Téléchargez le ZIP depuis GitHub et double-cliquez sur `DEMARRER.bat`.
 
 Ça installe les bibliothèques, télécharge un historique EURUSD horaire si vous n'en avez
 pas, mesure s'il existe un signal, crible les stratégies classiques, entraîne l'agent,
