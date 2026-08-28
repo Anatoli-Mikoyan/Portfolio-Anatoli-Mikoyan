@@ -29,17 +29,29 @@ echo [1/3] Python %PYVER% detecte.
 
 REM --- Dependances ------------------------------------------------------
 echo [2/3] Installation des bibliotheques (quelques minutes la premiere fois)...
-python -m pip install --quiet --upgrade pip
-python -m pip install --quiet -r requirements.txt
+set SILENCE=--quiet --no-warn-script-location
+python -m pip install %SILENCE% --upgrade pip
+REM Le noyau doit reussir ; hmmlearn est optionnel (extension C, paquets precompiles
+REM tardifs apres chaque version de Python, utile au seul detecteur de regime par HMM).
+python -m pip install %SILENCE% numpy pandas scipy torch scikit-learn PyYAML pytest
 if errorlevel 1 (
   echo.
-  echo [X] L'installation des bibliotheques a echoue.
-  echo     Reessayez, ou lancez a la main : python -m pip install -r requirements.txt
+  echo [X] L'installation des bibliotheques essentielles a echoue.
+  echo     Si torch refuse de s'installer, votre Python est peut-etre trop recent :
+  echo     les paquets precompiles de PyTorch suivent avec quelques mois.
   echo.
   pause
   exit /b 1
 )
-echo       Termine.
+python -m pip install %SILENCE% hmmlearn >nul 2>&1
+if errorlevel 1 echo       [!] hmmlearn indisponible - non bloquant.
+python -c "import numpy,pandas,scipy,sklearn,torch" >nul 2>&1
+if errorlevel 1 (
+  echo [X] Les bibliotheques ne s'importent pas. Installation incomplete.
+  pause
+  exit /b 1
+)
+echo       Termine et verifie.
 
 REM --- Lancement --------------------------------------------------------
 echo [3/3] Lancement de l'analyse complete.

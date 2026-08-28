@@ -93,15 +93,46 @@ Ok "Installe dans $Racine"
 Titre "[3/5] Bibliotheques Python"
 Info "Quelques minutes la premiere fois (PyTorch est volumineux)."
 Push-Location $Racine
-& $Py -m pip install --quiet --upgrade pip
-& $Py -m pip install --quiet -r requirements.txt
+
+# --no-warn-script-location : pip signale sinon que pip.exe n'est pas dans le PATH.
+# L'avertissement est sans objet ici, on appelle toujours "python -m pip".
+$Silence = @("--quiet", "--no-warn-script-location")
+& $Py -m pip install @Silence --upgrade pip
+
+# Les dependances sont installees en DEUX temps. Le noyau doit reussir ; hmmlearn est
+# une extension C dont les paquets precompiles arrivent tard apres chaque nouvelle
+# version de Python, et il ne sert qu'au detecteur de regime par HMM. Le lier au reste
+# ferait echouer toute l'installation pour une brique optionnelle.
+$Noyau = @("numpy>=1.24", "pandas>=2.0", "scipy>=1.10", "torch>=2.0",
+           "scikit-learn>=1.3", "PyYAML>=6.0", "pytest>=7.4")
+& $Py -m pip install @Silence @Noyau
 if ($LASTEXITCODE -ne 0) {
     Pop-Location
-    Souci "L'installation des bibliotheques a echoue."
-    Info "Reessayez a la main :  cd $Racine  puis  $Py -m pip install -r requirements.txt"
+    Souci "L'installation des bibliotheques essentielles a echoue."
+    Info "Reessayez a la main :  cd $Racine"
+    Info "puis :  $Py -m pip install numpy pandas scipy torch scikit-learn PyYAML pytest"
+    Info "Si torch refuse de s'installer, votre version de Python est peut-etre trop"
+    Info "recente : les paquets precompiles de PyTorch suivent avec quelques mois."
     return
 }
-Ok "Installees"
+
+& $Py -m pip install @Silence "hmmlearn>=0.3" 2>$null | Out-Null
+$Hmm = ($LASTEXITCODE -eq 0)
+if (-not $Hmm) {
+    Souci "hmmlearn indisponible pour cette version de Python - ce n'est pas bloquant."
+    Info "Seul le detecteur de regime par HMM sera inactif ; les detecteurs par regles"
+    Info "et par clustering fonctionnent, et l'analyse complete aussi."
+}
+
+# Verification par import : la seule preuve que l'installation a reellement abouti.
+$Verif = & $Py -c "import numpy,pandas,scipy,sklearn,torch;print('OK',torch.__version__)" 2>&1
+if ($LASTEXITCODE -ne 0) {
+    Pop-Location
+    Souci "Les bibliotheques ne s'importent pas :"
+    Write-Host "  $Verif" -ForegroundColor Red
+    return
+}
+Ok "Installees et verifiees ($Verif)"
 
 # ------------------------------------------------------------------ 4. Raccourci
 Titre "[4/5] Raccourci"

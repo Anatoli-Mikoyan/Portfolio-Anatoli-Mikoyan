@@ -25,9 +25,29 @@ fi
 echo "[1/3] $($PY --version) détecté."
 
 echo "[2/3] Installation des bibliothèques (quelques minutes la première fois)…"
-"$PY" -m pip install --quiet --upgrade pip
-"$PY" -m pip install --quiet -r requirements.txt
-echo "      Terminé."
+SILENCE="--quiet --no-warn-script-location"
+"$PY" -m pip install $SILENCE --upgrade pip
+
+# En deux temps : le noyau doit réussir, hmmlearn est optionnel. C'est une extension C
+# dont les paquets précompilés arrivent tard après chaque version de Python, et il ne
+# sert qu'au détecteur de régime par HMM.
+if ! "$PY" -m pip install $SILENCE numpy'>=1.24' pandas'>=2.0' scipy'>=1.10' \
+        torch'>=2.0' scikit-learn'>=1.3' PyYAML'>=6.0' pytest'>=7.4'; then
+  echo "[X] L'installation des bibliothèques essentielles a échoué."
+  echo "    Si torch refuse de s'installer, votre version de Python est peut-être trop"
+  echo "    récente : les paquets précompilés de PyTorch suivent avec quelques mois."
+  exit 1
+fi
+
+if ! "$PY" -m pip install $SILENCE hmmlearn'>=0.3' >/dev/null 2>&1; then
+  echo "      [!] hmmlearn indisponible — non bloquant (seul le HMM de régime est inactif)."
+fi
+
+if ! "$PY" -c "import numpy,pandas,scipy,sklearn,torch" 2>/dev/null; then
+  echo "[X] Les bibliothèques ne s'importent pas. Installation incomplète."
+  exit 1
+fi
+echo "      Terminé et vérifié."
 
 echo "[3/3] Lancement de l'analyse complète."
 echo "      Comptez 10 à 20 minutes. Le rapport s'ouvrira tout seul."
