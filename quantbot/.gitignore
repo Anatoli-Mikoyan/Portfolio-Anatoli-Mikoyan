@@ -3,8 +3,8 @@ __pycache__/
 *.egg-info/
 .pytest_cache/
 .ipynb_checkpoints/
-runs/
-data/
+/runs/
+/data/
 *.pt
 *.parquet
 *.log
