@@ -220,9 +220,12 @@ def test_le_verificateur_reconnait_un_blocage_windows(tmp_path):
     res = _lancer_verificateur(pythonpath=str(tmp_path))
     assert res.returncode == 1
     assert "Smart App Control" in res.stdout, "le blocage Windows n'a pas été reconnu"
-    assert "Réinstaller ne sert à rien" in res.stdout
-    assert "--force-reinstall" not in res.stdout, (
-        "conseil de réinstallation propose alors que le fichier est deja installe")
+    # Le diagnostic doit expliquer la nature du blocage — un simple ordre de
+    # réinstaller, sans contexte, laisse l'utilisateur sans recours s'il échoue.
+    assert "refuse de le CHARGER" in res.stdout
+    assert "Smart App Control > Désactivé" in res.stdout or "Désactivé" in res.stdout
+    assert "scipy==1.16.3" in res.stdout, "la piste d'une version plus ancienne manque"
+    assert "python.org/downloads" in res.stdout, "la piste Python 3.12 manque"
 
 
 def test_le_verificateur_distingue_blocage_et_paquet_absent(tmp_path):
@@ -233,7 +236,9 @@ def test_le_verificateur_distingue_blocage_et_paquet_absent(tmp_path):
     res = _lancer_verificateur(pythonpath=str(tmp_path))
     assert res.returncode == 1
     assert "--force-reinstall" in res.stdout
-    assert "Smart App Control" not in res.stdout
+    assert "Smart App Control" not in res.stdout, (
+        "un paquet absent ne doit pas declencher le diagnostic de blocage Windows")
+    assert "Réparation" in res.stdout
 
 
 def test_la_normalisation_couvre_les_variantes_dapostrophe_et_daccent():
