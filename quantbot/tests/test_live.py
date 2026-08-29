@@ -387,3 +387,92 @@ def test_expert_advisor_sends_the_account_type():
     assert '\\"account_type\\"' in source, "l'EA n'envoie pas account_type"
     assert "ACCOUNT_TRADE_MODE" in source, (
         "le type de compte doit venir du terminal, pas d'une heuristique sur le solde")
+
+
+# ---------------------------------------------------------------------------------------
+# Concordance instrument / unité de temps
+#
+# Un modèle entraîné sur EURUSD H1 n'a rien à dire sur l'or en M5. Il répondrait
+# pourtant, sans erreur visible, des valeurs calculées sur une volatilité et un
+# spread qui n'ont aucun rapport avec ceux de son entraînement. Le cas n'est pas
+# théorique : quand EURUSD n'apparaît pas dans la liste du courtier, la tentation
+# est de poser l'EA sur le premier symbole disponible.
+# ---------------------------------------------------------------------------------------
+def test_suffixes_de_courtier_acceptes():
+    """Le même EURUSD s'appelle autrement chez chaque courtier ; les refuser tous
+    rendrait le pont inutilisable là où il doit servir."""
+    from qbot.live.engine import meme_instrument
+
+    for variante in ("EURUSD", "EURUSD.a", "EURUSDm", "EURUSD_i", "eurusd.raw",
+                     "EURUSD-ECN", "EURUSD.pro", "EURUSDc"):
+        assert meme_instrument("EURUSD", variante), f"{variante} refusé à tort"
+
+
+def test_instrument_different_refuse():
+    from qbot.live.engine import meme_instrument
+
+    for autre in ("GBPUSD", "XAUUSD", "USDJPY", "EURGBP", "BTCUSD"):
+        assert not meme_instrument("EURUSD", autre), f"{autre} accepté à tort"
+    # Un préfixe n'est pas l'instrument : « EUR » ne doit pas passer pour « EURUSD ».
+    assert not meme_instrument("EURUSD", "EUR")
+
+
+def test_unite_de_temps_mql5_reconnue():
+    """MQL5 envoie « PERIOD_H1 », la configuration stocke « H1 »."""
+    from qbot.live.engine import meme_periode
+
+    assert meme_periode("H1", "PERIOD_H1")
+    assert meme_periode("H1", "H1")
+    assert not meme_periode("H1", "PERIOD_M5")
+    assert not meme_periode("H1", "D1")
+
+
+def test_le_serveur_refuse_douvrir_sur_un_autre_instrument(trained):
+    """Le contrôle doit bloquer l'ouverture, pas seulement écrire dans un journal."""
+    model_dir, df = trained
+    engine = _moteur(model_dir, dry_run=False, allow_real_account=True)
+
+    msg = _requete_compte(df, engine, "demo")
+    msg["symbol"] = "XAUUSD"
+    resp = engine.predict(msg)
+
+    assert resp.target_exposure == 0.0
+    assert any("instrument inattendu" in r for r in resp.reasons), resp.reasons
+
+
+def test_le_serveur_refuse_douvrir_sur_une_autre_unite_de_temps(trained):
+    model_dir, df = trained
+    engine = _moteur(model_dir, dry_run=False, allow_real_account=True)
+
+    msg = _requete_compte(df, engine, "demo")
+    msg["timeframe"] = "PERIOD_M5"
+    resp = engine.predict(msg)
+
+    assert resp.target_exposure == 0.0
+    assert any("unité de temps inattendue" in r for r in resp.reasons), resp.reasons
+
+
+def test_un_suffixe_de_courtier_ne_bloque_pas(trained):
+    """Le faux positif serait aussi grave que l'absence de contrôle : il empêcherait
+    de trader chez tous les courtiers qui suffixent leurs symboles."""
+    model_dir, df = trained
+    engine = _moteur(model_dir, dry_run=False, allow_real_account=True)
+
+    msg = _requete_compte(df, engine, "demo")
+    msg["symbol"] = "EURUSD.a"
+    resp = engine.predict(msg)
+
+    assert resp.ok
+    assert not any("inattendu" in r for r in resp.reasons), resp.reasons
+
+
+def test_la_discordance_nempeche_jamais_de_fermer(trained):
+    """Même sur le mauvais instrument, une position ouverte doit pouvoir sortir."""
+    model_dir, df = trained
+    engine = _moteur(model_dir, dry_run=False, allow_real_account=True)
+
+    msg = _requete_compte(df, engine, "demo", expo=0.4)
+    msg["symbol"] = "XAUUSD"
+    resp = engine.predict(msg)
+
+    assert abs(resp.target_exposure) <= 0.4 + 1e-9

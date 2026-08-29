@@ -9,6 +9,8 @@ tout le ML appliqué.
 """
 from __future__ import annotations
 
+import re
+
 import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
@@ -73,6 +75,47 @@ def load_bundle(model_dir: str | Path, device: Optional[str] = None) -> ModelBun
     return ModelBundle(pipeline=pipeline, agent=agent, config=config, model_id=model_id)
 
 
+# =======================================================================================
+# Concordance instrument / unité de temps
+#
+# Un modèle entraîné sur EURUSD en H1 n'a rien à dire sur l'or en M5 : ses features sont
+# calibrées sur une volatilité, un spread et une saisonnalité qui n'ont aucun rapport. Il
+# répondrait pourtant, avec aplomb, des valeurs dénuées de sens. Rien ne vérifiait cela
+# jusqu'ici — l'EA pouvait être posé sur n'importe quel graphique.
+#
+# La comparaison des symboles doit tolérer les suffixes de courtier : le même EURUSD
+# s'appelle EURUSD.a, EURUSDm, EURUSD_i ou EURUSD.raw selon l'enseigne, et refuser ces
+# variantes rendrait le pont inutilisable chez la moitié des courtiers.
+# =======================================================================================
+_SUFFIXE_MAX = 5
+
+
+def _normaliser_symbole(nom: str) -> str:
+    return re.sub(r"[^A-Z0-9]", "", str(nom).upper())
+
+
+def meme_instrument(attendu: str, recu: str) -> bool:
+    """Le symbole reçu désigne-t-il l'instrument sur lequel le modèle a été entraîné ?"""
+    a, b = _normaliser_symbole(attendu), _normaliser_symbole(recu)
+    if not a or not b:
+        return True                      # information absente : on ne bloque pas là-dessus
+    # `b` doit être `a` éventuellement suivi d'un suffixe court. L'inclusion inverse
+    # serait trop permissive : « EUR » ne doit pas passer pour « EURUSD ».
+    return b.startswith(a) and (len(b) - len(a)) <= _SUFFIXE_MAX
+
+
+def _normaliser_periode(nom: str) -> str:
+    """« PERIOD_H1 » (MQL5) et « H1 » (config) désignent la même chose."""
+    return str(nom).upper().replace("PERIOD_", "").strip()
+
+
+def meme_periode(attendue: str, recue: str) -> bool:
+    a, b = _normaliser_periode(attendue), _normaliser_periode(recue)
+    if not a or not b:
+        return True
+    return a == b
+
+
 class InferenceEngine:
     """Transforme une requête de l'EA en décision d'exposition, garde-fous compris."""
 
@@ -115,6 +158,7 @@ class InferenceEngine:
         # une autorisation distincte de l'armement des ordres.
         self.allow_real_account = bool(allow_real_account)
         self._account_seen: str = ""
+        self._discordance_signalee: str = ""
         self.n_requests = 0
         self.last_decision: Optional[PredictResponse] = None
 
@@ -260,6 +304,24 @@ class InferenceEngine:
             reasons = list(decision.reasons)
             if self.replay:
                 reasons.append(f"replay : fraîcheur ignorée (barre vieille de {data_age:.0f}s)")
+            # Concordance instrument / unité de temps, signalée une seule fois puis
+            # appliquée à chaque décision.
+            attendu_sym = getattr(self.bundle.config.data, "symbol", "")
+            attendu_tf = getattr(self.bundle.config.data, "timeframe", "")
+            recu_sym = str(msg.get("symbol", ""))
+            recu_tf = str(msg.get("timeframe", ""))
+            discordance = None
+            if not meme_instrument(attendu_sym, recu_sym):
+                discordance = (f"instrument inattendu : modèle entraîné sur "
+                               f"{attendu_sym}, graphique sur {recu_sym}")
+            elif not meme_periode(attendu_tf, recu_tf):
+                discordance = (f"unité de temps inattendue : modèle entraîné en "
+                               f"{attendu_tf}, graphique en "
+                               f"{_normaliser_periode(recu_tf)}")
+            if discordance and discordance != self._discordance_signalee:
+                self._discordance_signalee = discordance
+                log.error("%s — aucune ouverture ne sera autorisée.", discordance)
+
             compte = str(msg.get("account_type", "unknown")).lower()
             if compte and compte != self._account_seen:
                 self._account_seen = compte
@@ -274,7 +336,9 @@ class InferenceEngine:
             # Blocage identique au dry-run : on n'ouvre ni ne renforce, mais on laisse
             # toujours réduire et fermer. Une position déjà ouverte doit pouvoir sortir.
             bloque = None
-            if self.dry_run:
+            if discordance:
+                bloque = discordance
+            elif self.dry_run:
                 bloque = "dry_run : ouverture/renforcement bloqué"
             elif compte == "real" and not self.allow_real_account:
                 bloque = ("compte RÉEL sans autorisation explicite : ouverture bloquée "
