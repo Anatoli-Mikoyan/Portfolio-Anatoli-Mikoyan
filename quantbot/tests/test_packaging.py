@@ -123,3 +123,78 @@ def test_tous_les_sous_paquets_sont_importables():
         except Exception as exc:  # noqa: BLE001 - on veut le rapport complet
             erreurs.append(f"{nom}: {type(exc).__name__}: {exc}")
     assert not erreurs, "Sous-paquets non importables :\n  " + "\n  ".join(erreurs)
+
+
+# ---------------------------------------------------------------------------------------
+# Vérificateur d'environnement
+#
+# Il tourne sur la machine de l'utilisateur au moment où quelque chose est déjà cassé :
+# c'est le seul message qu'il verra. Il doit donc nommer le paquet fautif, montrer
+# l'erreur réelle, et sortir avec un code non nul — sans jamais lever lui-même.
+# ---------------------------------------------------------------------------------------
+def _lancer_verificateur(pythonpath: str | None = None):
+    env = dict(**__import__("os").environ)
+    if pythonpath:
+        env["PYTHONPATH"] = pythonpath
+    return subprocess.run(
+        [__import__("sys").executable, "scripts/verifier.py"],
+        cwd=RACINE, capture_output=True, text=True, env=env,
+    )
+
+
+def test_le_verificateur_valide_un_environnement_sain():
+    res = _lancer_verificateur()
+    assert res.returncode == 0, res.stdout + res.stderr
+    assert "Environnement complet" in res.stdout
+    for paquet in ("numpy", "pandas", "scipy", "scikit-learn", "torch"):
+        assert paquet in res.stdout, f"{paquet} absent du rapport"
+
+
+def test_le_verificateur_nomme_le_paquet_fautif(tmp_path):
+    """Un import cassé doit produire un diagnostic exploitable, pas une trace brute."""
+    (tmp_path / "torch.py").write_text(
+        'raise ImportError("DLL load failed while importing _C")\n', encoding="utf-8")
+
+    res = _lancer_verificateur(pythonpath=str(tmp_path))
+    assert res.returncode == 1, "un import cassé doit donner un code de retour non nul"
+    assert "torch" in res.stdout
+    assert "DLL load failed" in res.stdout, "l'erreur réelle doit être montrée"
+    assert "pip install" in res.stdout, "la commande de réparation doit être proposée"
+    assert "--force-reinstall" in res.stdout
+    assert not res.stderr.strip(), (
+        "le vérificateur ne doit rien écrire sur stderr : sous PowerShell avec "
+        "$ErrorActionPreference='Stop', la moindre ligne y tuerait l'installeur.\n"
+        + res.stderr)
+
+
+def test_un_paquet_optionnel_absent_nest_pas_bloquant(tmp_path):
+    """hmmlearn manque souvent (pas de roue pour les Python récents) : non bloquant."""
+    (tmp_path / "hmmlearn.py").write_text(
+        'raise ImportError("pas de roue pour cette version")\n', encoding="utf-8")
+
+    res = _lancer_verificateur(pythonpath=str(tmp_path))
+    assert res.returncode == 0, "un paquet optionnel ne doit pas faire échouer"
+    assert "non bloquant" in res.stdout
+
+
+def test_linstalleur_ne_redirige_plus_stderr_sans_protection():
+    """Le défaut qui a masqué le diagnostic chez l'utilisateur ne doit pas revenir.
+
+    `$ErrorActionPreference = "Stop"` transforme toute ligne écrite sur stderr par un
+    programme externe en erreur fatale. Un `2>&1` non protégé tue donc l'installeur
+    avant qu'il puisse afficher quoi que ce soit. Seul l'intérieur de la fonction
+    `Executer`, qui suspend ce comportement, a le droit d'en contenir un.
+    """
+    lignes = (RACINE / "install.ps1").read_text(encoding="utf-8").splitlines()
+    dans_executer = False
+    fautives = []
+    for i, ligne in enumerate(lignes, 1):
+        if ligne.startswith("function Executer"):
+            dans_executer = True
+        elif dans_executer and ligne.startswith("}"):
+            dans_executer = False
+        elif ("2>&1" in ligne or "2>$null" in ligne) and not dans_executer:
+            fautives.append(f"{i}: {ligne.strip()}")
+
+    assert not fautives, (
+        "Redirection de stderr hors de la fonction Executer :\n  " + "\n  ".join(fautives))

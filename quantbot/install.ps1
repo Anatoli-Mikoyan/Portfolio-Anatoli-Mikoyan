@@ -8,6 +8,25 @@
 #  Il n'écrit que dans %USERPROFILE%\QBot et ne touche à rien d'autre.
 # ======================================================================================
 $ErrorActionPreference = "Stop"
+
+# $ErrorActionPreference = "Stop" transforme la MOINDRE ligne ecrite sur stderr par un
+# programme externe en erreur FATALE : le script meurt sur place, avant d'avoir pu lire
+# le code de retour ou afficher quoi que ce soit d'utile. C'est exactement ce qui s'est
+# produit ici — une trace Python tronquee, aucun diagnostic, et l'installeur disparu.
+# Tout appel externe susceptible d'ecrire sur stderr passe donc par cette fonction, qui
+# suspend le comportement le temps de l'appel et rend la main proprement.
+function Executer {
+    param([Parameter(Mandatory)][string]$Fichier, [string[]]$Arguments = @())
+    $memoire = $ErrorActionPreference
+    $ErrorActionPreference = "Continue"
+    try {
+        $sortie = & $Fichier @Arguments 2>&1 | Out-String
+        $code   = $LASTEXITCODE
+    } finally {
+        $ErrorActionPreference = $memoire
+    }
+    return [pscustomobject]@{ Sortie = $sortie.TrimEnd(); Code = $code }
+}
 [Net.ServicePointManager]::SecurityProtocol = [Net.SecurityProtocolType]::Tls12
 
 $Repo    = "Anatoli-Mikoyan/Portfolio-Anatoli-Mikoyan"
@@ -31,7 +50,7 @@ Titre "[1/5] Python"
 function Trouver-Python {
     foreach ($c in @("python", "python3", "py")) {
         try {
-            $v = & $c --version 2>&1
+            $v = (Executer $c @("--version")).Sortie
             if ($LASTEXITCODE -eq 0 -and "$v" -match "Python 3\.(\d+)") {
                 if ([int]$Matches[1] -ge 9) { return $c }
             }
@@ -63,7 +82,7 @@ if (-not $Py) {
     Write-Host ""
     return
 }
-Ok ((& $Py --version 2>&1) -replace "`n", "")
+Ok ((Executer $Py @("--version")).Sortie -replace "`n", "")
 
 # ------------------------------------------------------------------ 2. Téléchargement
 Titre "[2/5] Telechargement du projet"
@@ -125,8 +144,7 @@ if ($LASTEXITCODE -ne 0) {
     return
 }
 
-& $Py -m pip install @Silence "hmmlearn>=0.3" 2>$null | Out-Null
-$Hmm = ($LASTEXITCODE -eq 0)
+$Hmm = (Executer $Py (@("-m", "pip", "install") + $Silence + @("hmmlearn>=0.3"))).Code -eq 0
 if (-not $Hmm) {
     Souci "hmmlearn indisponible pour cette version de Python - ce n'est pas bloquant."
     Info "Seul le detecteur de regime par HMM sera inactif ; les detecteurs par regles"
@@ -134,14 +152,17 @@ if (-not $Hmm) {
 }
 
 # Verification par import : la seule preuve que l'installation a reellement abouti.
-$Verif = & $Py -c "import numpy,pandas,scipy,sklearn,torch;print('OK',torch.__version__)" 2>&1
-if ($LASTEXITCODE -ne 0) {
+# Deleguee a scripts/verifier.py, qui isole chaque import et nomme le coupable — un
+# import groupe s'arrete au premier echec et ne dit pas lequel des six paquets manque.
+$Verif = Executer $Py @("scripts\verifier.py")
+if ($Verif.Code -ne 0) {
     Pop-Location
-    Souci "Les bibliotheques ne s'importent pas :"
-    Write-Host "  $Verif" -ForegroundColor Red
+    Souci "Les bibliotheques ne s'importent pas. Detail :"
+    Write-Host ""
+    Write-Host $Verif.Sortie
     return
 }
-Ok "Installees et verifiees ($Verif)"
+Ok "Installees et verifiees"
 
 # ------------------------------------------------------------------ 4. Raccourci
 Titre "[4/5] Raccourci"

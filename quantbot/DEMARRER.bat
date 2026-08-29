@@ -45,9 +45,12 @@ if errorlevel 1 (
 )
 python -m pip install %SILENCE% hmmlearn >nul 2>&1
 if errorlevel 1 echo       [!] hmmlearn indisponible - non bloquant.
-python -c "import numpy,pandas,scipy,sklearn,torch" >nul 2>&1
+REM Verification deleguee a verifier.py : il isole chaque import et nomme le
+REM paquet fautif, la ou un import groupe s'arrete au premier echec sans dire lequel.
+python scripts\verifier.py
 if errorlevel 1 (
-  echo [X] Les bibliotheques ne s'importent pas. Installation incomplete.
+  echo.
+  echo [X] Installation incomplete - le detail est ci-dessus.
   pause
   exit /b 1
 )
