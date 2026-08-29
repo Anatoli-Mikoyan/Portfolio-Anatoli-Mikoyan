@@ -32,6 +32,79 @@ OPTIONNELS = [
 ]
 
 
+# Windows peut bloquer une bibliothèque native APRÈS son installation. L'installation
+# reussit, le fichier est bien sur le disque, et c'est le chargement qui est refusé —
+# par Smart App Control (Windows 11), WDAC ou une stratégie AppLocker. Réinstaller n'y
+# change rien : le même fichier sera reposé et rebloqué. Distinguer ce cas d'un paquet
+# réellement manquant est indispensable, sinon on envoie l'utilisateur réinstaller en
+# boucle une bibliothèque qui est déjà là.
+_SIGNES_BLOCAGE_WINDOWS = (
+    "contrôle d'application",       # « Une stratégie de contrôle d'application a bloqué… »
+    "controle d'application",
+    "application control",
+    "blocked by group policy",
+    "stratégie de groupe",
+    "strategie de groupe",
+    "0x800704ec",
+)
+
+
+def _normaliser(texte: str) -> str:
+    """Minuscules, apostrophes et accents ramenés à une forme unique.
+
+    Windows écrit « d’application » avec l’apostrophe typographique U+2019, pas
+    l’apostrophe ASCII — une comparaison littérale échoue silencieusement. Les
+    accents subissent le même sort selon l’encodage de la console, d’où leur
+    suppression : on compare des chaînes réduites au plus petit dénominateur.
+    """
+    import unicodedata
+
+    texte = texte.lower()
+    for guillemet in ("’", "‘", "´", "ʼ"):
+        texte = texte.replace(guillemet, "'")
+    decompose = unicodedata.normalize("NFD", texte)
+    return "".join(c for c in decompose if unicodedata.category(c) != "Mn")
+
+
+def _est_bloque_par_windows(erreur: str) -> bool:
+    """Un DLL refusé par une stratégie de sécurité, et non un paquet absent."""
+    bas = _normaliser(erreur)
+    if "dll load failed" not in bas:
+        return False
+    return any(_normaliser(signe) in bas for signe in _SIGNES_BLOCAGE_WINDOWS)
+
+
+def _conseil_blocage_windows(paquets: list[str]) -> None:
+    print("  Ce n'est PAS une installation ratée : le fichier est bien présent sur")
+    print("  le disque. C'est Windows qui refuse de le charger — Smart App Control,")
+    print("  WDAC ou une stratégie AppLocker bloque les bibliothèques natives peu")
+    print("  répandues, et les versions récentes de scipy ou numpy en font partie.")
+    print()
+    print("  Réinstaller ne sert à rien : le même fichier sera reposé et rebloqué.")
+    print()
+    print("  Trois pistes, de la moins définitive à la plus définitive :")
+    print()
+    print("  1. Essayer une version plus ancienne, mieux établie et donc reconnue :")
+    print(f"        python -m pip install \"scipy==1.16.3\"")
+    print("     Deux minutes, rien de cassé si ça ne marche pas.")
+    print()
+    print("  2. Installer Python 3.12 en parallèle. Les bibliothèques y sont")
+    print("     déployées depuis des années et Windows les connaît :")
+    print("        https://www.python.org/downloads/release/python-3128/")
+    print("     (cocher « Add Python to PATH »)")
+    print()
+    print("  3. Désactiver Smart App Control :")
+    print("        Sécurité Windows > Contrôle des applications et du navigateur")
+    print("        > Paramètres de Smart App Control > Désactivé")
+    print("     ATTENTION : une fois désactivé, il ne peut PLUS être réactivé sans")
+    print("     réinstaller Windows. À ne faire qu'en dernier recours.")
+    print()
+    print("  Pour confirmer que c'est bien lui : Observateur d'événements >")
+    print("  Journaux des applications et des services > Microsoft > Windows >")
+    print("  CodeIntegrity > Operational.")
+    print()
+
+
 def _version(module) -> str:
     return str(getattr(module, "__version__", "?"))
 
@@ -73,6 +146,11 @@ def main() -> int:
             print(f"      {ligne}")
 
     print()
+    bloques = [p for p, _, err in echecs if _est_bloque_par_windows(err)]
+    if bloques:
+        _conseil_blocage_windows(bloques)
+        return 1
+
     print("  Réparation — copiez cette commande :")
     print()
     manquants = " ".join(p for p, _, _ in echecs)

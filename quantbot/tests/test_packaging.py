@@ -198,3 +198,69 @@ def test_linstalleur_ne_redirige_plus_stderr_sans_protection():
 
     assert not fautives, (
         "Redirection de stderr hors de la fonction Executer :\n  " + "\n  ".join(fautives))
+
+
+def test_le_verificateur_reconnait_un_blocage_windows(tmp_path):
+    """Un DLL bloqué par une stratégie de sécurité n'est pas un paquet manquant.
+
+    Distinction cruciale : l'installation a réussi, le fichier est sur le disque,
+    et c'est son CHARGEMENT que Windows refuse (Smart App Control, WDAC, AppLocker).
+    Proposer un `pip install --force-reinstall` reposerait exactement le même
+    fichier, qui serait rebloqué — on enverrait l'utilisateur en boucle.
+
+    Le message est reproduit tel que Windows l'écrit, avec l'apostrophe
+    typographique U+2019 : une comparaison sur l'apostrophe ASCII échoue
+    silencieusement, ce qui est précisément le défaut que ce test verrouille.
+    """
+    (tmp_path / "sklearn.py").write_text(
+        'raise ImportError("DLL load failed while importing _uarray: Une stratégie '
+        'de contrôle d’application a bloqué ce fichier.")\n',
+        encoding="utf-8")
+
+    res = _lancer_verificateur(pythonpath=str(tmp_path))
+    assert res.returncode == 1
+    assert "Smart App Control" in res.stdout, "le blocage Windows n'a pas été reconnu"
+    assert "Réinstaller ne sert à rien" in res.stdout
+    assert "--force-reinstall" not in res.stdout, (
+        "conseil de réinstallation propose alors que le fichier est deja installe")
+
+
+def test_le_verificateur_distingue_blocage_et_paquet_absent(tmp_path):
+    """Un vrai paquet manquant doit toujours recevoir la commande de réinstallation."""
+    (tmp_path / "torch.py").write_text(
+        'raise ModuleNotFoundError("No module named \'torch._C\'")\n', encoding="utf-8")
+
+    res = _lancer_verificateur(pythonpath=str(tmp_path))
+    assert res.returncode == 1
+    assert "--force-reinstall" in res.stdout
+    assert "Smart App Control" not in res.stdout
+
+
+def test_la_normalisation_couvre_les_variantes_dapostrophe_et_daccent():
+    """Le test unitaire du détecteur, sur les formes que Windows peut produire."""
+    import importlib.util
+
+    chemin = RACINE / "scripts" / "verifier.py"
+    spec = importlib.util.spec_from_file_location("verificateur", chemin)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    doivent_matcher = [
+        "DLL load failed while importing _uarray: Une stratégie de contrôle "
+        "d’application a bloqué ce fichier.",          # apostrophe typographique
+        "DLL load failed while importing _uarray: Une strategie de controle "
+        "d'application a bloque ce fichier.",               # sans accents, ASCII
+        "DLL load failed: This program is blocked by group policy.",
+        "DLL load failed while importing x: error 0x800704EC",
+    ]
+    for message in doivent_matcher:
+        assert module._est_bloque_par_windows(message), f"non détecté : {message[:60]}"
+
+    ne_doivent_pas = [
+        "No module named 'scipy'",
+        "DLL load failed while importing _C: Le module spécifié est introuvable.",
+        "numpy.dtype size changed, may indicate binary incompatibility",
+    ]
+    for message in ne_doivent_pas:
+        assert not module._est_bloque_par_windows(message), (
+            f"faux positif : {message[:60]}")
