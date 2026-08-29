@@ -83,7 +83,16 @@ $Source = Get-ChildItem -Path $Tmp -Directory | Select-Object -First 1
 $Source = Join-Path $Source.FullName "quantbot"
 if (-not (Test-Path $Source)) { throw "Dossier 'quantbot' introuvable dans l'archive." }
 
-if (Test-Path $Racine) { Remove-Item $Racine -Recurse -Force }
+if (Test-Path $Racine) {
+    # Reinstallation : tout le dossier est remplace, modele entraine et journaux
+    # de demo compris. C'est voulu (une installation partiellement mise a jour est
+    # pire qu'une neuve), mais cela ne doit pas se produire en silence.
+    Souci "Un dossier QBot existe deja : il va etre REMPLACE."
+    Info "Modele entraine, resultats et journaux de demo seront perdus."
+    Info "Pour les garder, arretez maintenant (Ctrl+C) et copiez $Racine ailleurs."
+    Start-Sleep -Seconds 8
+    Remove-Item $Racine -Recurse -Force
+}
 Move-Item $Source $Racine
 Remove-Item $Zip -Force
 Remove-Item $Tmp -Recurse -Force
@@ -161,5 +170,8 @@ Write-Host "  Termine." -ForegroundColor Cyan
 Write-Host "  Rapport      : $Racine\runs\start\rapport.html" -ForegroundColor Cyan
 Write-Host "  Relancer     : $Cmd" -ForegroundColor Cyan
 Write-Host "  Vos donnees  : $Cmd --csv chemin\vers\fichier.csv" -ForegroundColor Cyan
+Write-Host "" -ForegroundColor Cyan
+Write-Host "  ETAPE SUIVANTE - brancher le bot sur MetaTrader 5 :" -ForegroundColor Cyan
+Write-Host "    double-cliquez sur $Racine\CONNECTER_MT5.bat" -ForegroundColor Cyan
 Write-Host "======================================================================" -ForegroundColor Cyan
 Write-Host ""
