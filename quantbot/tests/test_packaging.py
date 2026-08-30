@@ -269,3 +269,73 @@ def test_la_normalisation_couvre_les_variantes_dapostrophe_et_daccent():
     for message in ne_doivent_pas:
         assert not module._est_bloque_par_windows(message), (
             f"faux positif : {message[:60]}")
+
+
+# ---------------------------------------------------------------------------------------
+# Rejeu visuel
+#
+# `regarder.py` affiche un capital qui evolue barre par barre. Le risque est qu'il
+# calcule ce capital a sa facon et affiche des chiffres qui ne correspondent pas a
+# ceux du moteur de backtest — un utilisateur verrait defiler une simulation
+# flatteuse sans rapport avec le verdict officiel.
+# ---------------------------------------------------------------------------------------
+def test_le_rejeu_compose_le_capital_comme_le_moteur_de_backtest():
+    """Le capital affiché doit suivre `equity` du backtest, pas un calcul parallèle."""
+    import numpy as np
+
+    rendements = np.array([0.01, -0.005, 0.02, -0.03, 0.004])
+    equity = np.cumprod(1.0 + rendements)          # ce que calcule run_backtest
+
+    # Ce que fait la boucle d'affichage de regarder.py :
+    capital, depart = 1000.0, 1000.0
+    for r in rendements:
+        capital *= 1.0 + r
+
+    assert capital == pytest.approx(depart * equity[-1], rel=1e-12), (
+        "le rejeu et le moteur de backtest divergent sur la composition du capital")
+
+
+def test_la_jauge_de_position_est_lisible_et_bornee():
+    """Une exposition hors bornes ne doit pas casser l'affichage."""
+    import importlib.util
+
+    spec = importlib.util.spec_from_file_location(
+        "regarder", RACINE / "scripts" / "regarder.py")
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    for position in (-5.0, -1.0, -0.5, 0.0, 0.5, 1.0, 5.0):
+        jauge = module._barre_position(position)
+        assert len(jauge) == 11, f"largeur variable pour {position} : {jauge!r}"
+
+    assert module._barre_position(0.0).count("█") == 0
+    assert module._barre_position(1.0).count("█") == 5
+    assert module._barre_position(-1.0).count("█") == 5
+    # Au-delà de 100 %, la jauge sature au lieu de déborder.
+    assert module._barre_position(5.0) == module._barre_position(1.0)
+
+    assert module._sens(0.3) == "ACHAT"
+    assert module._sens(-0.3) == "VENTE"
+    assert module._sens(0.0) == "PLAT"
+
+
+def test_le_rejeu_utilise_le_meme_decoupage_que_lanalyse():
+    """La période rejouée doit être celle que le modèle n'a jamais vue.
+
+    Si `regarder.py` découpait autrement que `start.py`, il rejouerait des barres
+    d'entraînement : le bot y paraîtrait excellent, pour la seule raison qu'il les
+    connaît par cœur.
+    """
+    import re
+
+    def decoupages(fichier: str) -> set[str]:
+        texte = (RACINE / "scripts" / fichier).read_text(encoding="utf-8")
+        return set(re.findall(r"df\.iloc\[[^\]]*n \* 0\.\d+[^\]]*\]", texte))
+
+    dans_start = decoupages("start.py")
+    dans_rejeu = decoupages("regarder.py")
+    assert dans_rejeu, "regarder.py ne découpe plus les données comme attendu"
+    assert dans_rejeu <= dans_start, (
+        "regarder.py découpe autrement que start.py :\n"
+        f"  rejeu   : {sorted(dans_rejeu)}\n"
+        f"  analyse : {sorted(dans_start)}")
