@@ -141,9 +141,18 @@ class RiskGuard:
         # --- Réductions progressives ---------------------------------------------------
         status = GuardStatus.OK
         if model_confidence < 1.0:
+            avant = allowed
             allowed *= float(np.clip(model_confidence, 0.0, 1.0))
-            status = GuardStatus.THROTTLED
-            reasons.append(f"confiance du modèle {model_confidence:.2f}")
+            # THROTTLED ne se justifie que si la mise à l'échelle a REELLEMENT reduit une
+            # position. La confiance est presque toujours sous 1.00 : lever le statut a
+            # chaque fois le rendait constant, donc muet — et pire, il donnait a lire un
+            # bridage la ou le modele avait simplement choisi de rester a plat. Un
+            # operateur qui voit « throttled | exposition 0.000 » a toutes les raisons de
+            # croire que quelque chose empeche son bot de trader.
+            if abs(avant - allowed) > 1e-9:
+                status = GuardStatus.THROTTLED
+                reasons.append(f"confiance du modèle {model_confidence:.2f} "
+                               f"(exposition {avant:+.3f} -> {allowed:+.3f})")
 
         if self.cfg.max_drawdown_stop is not None:
             # Désendettement progressif à l'approche du seuil d'arrêt : réduire tôt évite

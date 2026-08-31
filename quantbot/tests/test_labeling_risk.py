@@ -188,3 +188,44 @@ def test_guard_respects_session_filter():
     outside = datetime(2026, 3, 10, 3, tzinfo=timezone.utc)
     assert guard.check(1.0, timestamp=inside).status == GuardStatus.OK
     assert guard.check(1.0, timestamp=outside).status == GuardStatus.BLOCKED
+
+
+def test_le_statut_throttled_ne_se_leve_que_sur_une_reduction_reelle():
+    """« throttled » sur une position déjà nulle est un contresens visible.
+
+    La confiance du modèle est presque toujours inférieure à 1.00, et le statut se
+    levait à chaque décision — donc constant, donc muet. Pire : un opérateur lisant
+    « throttled | exposition 0.000 » conclut qu'un garde-fou empêche son bot de
+    trader, alors que le modèle a simplement choisi de rester à plat. La distinction
+    entre « bridé » et « à plat par décision » doit rester lisible.
+    """
+    from qbot.config import RiskConfig
+    from qbot.risk.guards import GuardStatus, RiskGuard
+
+    guard = RiskGuard(RiskConfig())
+
+    # Le modèle veut rester à plat : la confiance ne réduit rien.
+    plat = guard.check(0.0, model_confidence=0.93)
+    assert plat.allowed_position == pytest.approx(0.0)
+    assert plat.status is not GuardStatus.THROTTLED, (
+        "une position nulle ne peut pas être « bridée »")
+    assert not any("confiance" in r for r in plat.reasons)
+
+    # Le modèle veut une position : la confiance la réduit pour de bon.
+    guard2 = RiskGuard(RiskConfig())
+    ouvert = guard2.check(0.8, model_confidence=0.5)
+    assert ouvert.allowed_position == pytest.approx(0.4)
+    assert ouvert.status is GuardStatus.THROTTLED
+    assert any("confiance" in r for r in ouvert.reasons)
+    # Le motif doit montrer l'avant et l'après, sinon il n'apprend rien.
+    motif = next(r for r in ouvert.reasons if "confiance" in r)
+    assert "+0.800" in motif and "+0.400" in motif, motif
+
+
+def test_une_confiance_pleine_ne_bride_jamais():
+    from qbot.config import RiskConfig
+    from qbot.risk.guards import GuardStatus, RiskGuard
+
+    d = RiskGuard(RiskConfig()).check(0.6, model_confidence=1.0)
+    assert d.allowed_position == pytest.approx(0.6)
+    assert d.status is not GuardStatus.THROTTLED
