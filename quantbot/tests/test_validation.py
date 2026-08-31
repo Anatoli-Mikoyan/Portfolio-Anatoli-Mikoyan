@@ -6,6 +6,8 @@ qu'un estimateur qui plante.
 """
 from __future__ import annotations
 
+from pathlib import Path
+
 import numpy as np
 import pandas as pd
 import pytest
@@ -167,3 +169,53 @@ def test_monte_carlo_drawdown_is_conservative():
     mc = monte_carlo_drawdown(rng.normal(0.0004, 0.008, 2500), 600, 20, 0)
     assert mc["p95_worst"] <= mc["median"] <= 0.0
     assert mc["p99_worst"] <= mc["p95_worst"]
+
+
+# ---------------------------------------------------------------------------------------
+# Espacement des décisions
+# ---------------------------------------------------------------------------------------
+def test_espacer_conserve_la_position_entre_deux_decisions():
+    """Ralentir le rythme n'est pas mettre à plat entre les décisions.
+
+    Si `espacer` remettait la position à zéro entre deux points de décision, il
+    mesurerait une stratégie différente — et paierait MOINS de frais pour une
+    mauvaise raison, rendant toute comparaison de fréquences trompeuse.
+    """
+    import importlib.util
+
+    chemin = Path(__file__).resolve().parent.parent / "scripts" / "frequence.py"
+    spec = importlib.util.spec_from_file_location("frequence", chemin)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    idx = pd.date_range("2024-01-01", periods=10, freq="1h", tz="UTC")
+    positions = pd.Series([1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0, 1.0, -1.0], index=idx)
+
+    espace = module.espacer(positions, 4)
+    # Décisions aux indices 0, 4, 8 ; conservées entre-temps.
+    assert list(espace) == [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+    espace2 = module.espacer(positions, 2)
+    assert list(espace2) == [1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]
+
+    # pas = 1 : rien ne change.
+    assert list(module.espacer(positions, 1)) == list(positions)
+
+
+def test_espacer_reduit_bien_le_nombre_de_changements():
+    import importlib.util
+
+    chemin = Path(__file__).resolve().parent.parent / "scripts" / "frequence.py"
+    spec = importlib.util.spec_from_file_location("frequence", chemin)
+    module = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(module)
+
+    rng = np.random.default_rng(0)
+    idx = pd.date_range("2024-01-01", periods=500, freq="1h", tz="UTC")
+    positions = pd.Series(rng.choice([-1.0, 0.0, 1.0], 500), index=idx)
+
+    changements = lambda s: int((s.diff().abs() > 1e-9).sum())
+    base = changements(positions)
+    for pas in (4, 24, 120):
+        assert changements(module.espacer(positions, pas)) < base / (pas / 4), (
+            f"espacer({pas}) ne réduit pas assez les changements")
