@@ -159,3 +159,48 @@ def test_le_dry_run_est_le_defaut_dans_lea():
     source = mt5.EA_SOURCE.read_text(encoding="utf-8", errors="replace")
     ligne = next(l for l in source.splitlines() if "InpDryRun" in l and "input" in l)
     assert "= true" in ligne.replace(" ", " "), f"InpDryRun n'est pas à true : {ligne}"
+
+
+# ---------------------------------------------------------------------------------------
+# Tolérance sur le chemin fourni à la main
+#
+# L'utilisateur arrive ici après « Fichier > Ouvrir le dossier de données » et colle ce
+# que l'explorateur lui montre. Selon l'endroit où il s'est arrêté de naviguer, ce sera
+# la racine du terminal, le dossier MQL5, ou déjà Experts. Exiger la racine créerait
+# MQL5/MQL5/Experts sans un mot : l'installeur dirait « ok », et MetaEditor ne verrait
+# jamais le fichier.
+# ---------------------------------------------------------------------------------------
+def test_les_trois_profondeurs_de_chemin_convergent(tmp_path):
+    racine = tmp_path / "D0E8209F77C8CF37AD8BF550E51FF075"
+    attendu = racine / "MQL5" / "Experts"
+
+    for essai in (racine, racine / "MQL5", racine / "MQL5" / "Experts"):
+        assert mt5.dossier_experts(essai) == attendu, f"chemin mal ramené : {essai}"
+
+
+def test_la_casse_du_dossier_est_toleree(tmp_path):
+    """Windows ne distingue pas la casse ; le chemin collé peut arriver en minuscules."""
+    racine = tmp_path / "terminal"
+    assert mt5.dossier_experts(racine / "mql5").name == "Experts"
+    assert mt5.dossier_experts(racine / "MQL5" / "experts").name == "experts"
+
+
+def test_installation_sur_un_chemin_mql5(tmp_path):
+    """Le cas réel : l'utilisateur colle le chemin qui se termine par MQL5."""
+    racine = tmp_path / "D0E8209F77C8CF37AD8BF550E51FF075"
+    (racine / "MQL5" / "Experts").mkdir(parents=True)
+
+    assert mt5.installer_ea(str(racine / "MQL5")) == 0
+    assert (racine / "MQL5" / "Experts" / "QBotBridge.mq5").exists()
+    assert not (racine / "MQL5" / "MQL5").exists(), (
+        "un dossier MQL5/MQL5 a été créé : l'EA serait invisible pour MetaEditor")
+
+
+def test_installation_sur_un_chemin_experts(tmp_path):
+    racine = tmp_path / "terminal"
+    experts = racine / "MQL5" / "Experts"
+    experts.mkdir(parents=True)
+
+    assert mt5.installer_ea(str(experts)) == 0
+    assert (experts / "QBotBridge.mq5").exists()
+    assert not (experts / "MQL5").exists()

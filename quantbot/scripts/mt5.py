@@ -115,6 +115,23 @@ def dossiers_metatrader() -> List[Path]:
     return trouves
 
 
+def dossier_experts(chemin: Path) -> Path:
+    """Ramène n'importe quel chemin plausible au dossier MQL5/Experts.
+
+    L'utilisateur arrive ici après « Fichier > Ouvrir le dossier de données », et
+    colle ce que l'explorateur lui montre. Selon l'endroit où il s'est arrêté de
+    naviguer, ce sera la racine du terminal, le dossier MQL5, ou déjà Experts.
+    Exiger la racine reviendrait à créer MQL5/MQL5/Experts sans un mot d'erreur —
+    l'EA serait copié, l'installeur dirait « ok », et MetaEditor ne verrait rien.
+    """
+    parties = [p.lower() for p in chemin.parts]
+    if parties and parties[-1] == "experts":
+        return chemin
+    if parties and parties[-1] == "mql5":
+        return chemin / "Experts"
+    return chemin / "MQL5" / "Experts"
+
+
 def installer_ea(destination: Optional[str] = None) -> int:
     titre("INSTALLATION DE L'EA DANS METATRADER 5")
 
@@ -142,7 +159,7 @@ def installer_ea(destination: Optional[str] = None) -> int:
         attention(f"{len(cibles)} terminaux MetaTrader détectés — l'EA est copié dans chacun.")
 
     for cible in cibles:
-        experts = cible / "MQL5" / "Experts"
+        experts = dossier_experts(cible)
         experts.mkdir(parents=True, exist_ok=True)
         shutil.copy2(EA_SOURCE, experts / EA_SOURCE.name)
         ok(f"QBotBridge.mq5 copié dans {experts}")
