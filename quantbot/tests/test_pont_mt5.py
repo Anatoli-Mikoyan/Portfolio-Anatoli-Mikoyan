@@ -204,3 +204,27 @@ def test_installation_sur_un_chemin_experts(tmp_path):
     assert mt5.installer_ea(str(experts)) == 0
     assert (experts / "QBotBridge.mq5").exists()
     assert not (experts / "MQL5").exists()
+
+
+def test_les_libelles_des_parametres_portent_leur_nom():
+    """MetaTrader affiche le COMMENTAIRE d'un `input`, jamais le nom de la variable.
+
+    Une consigne écrite ailleurs — « mettez InpDryRun à false » — devient alors
+    introuvable dans la fenêtre « Paramètres d'entrée » : l'utilisateur y cherche
+    « InpDryRun » et n'y lit qu'une phrase en français. Préfixer le commentaire par
+    le nom fait coïncider les deux.
+    """
+    import re
+
+    source = mt5.EA_SOURCE.read_text(encoding="utf-8", errors="replace")
+    motif = re.compile(r"^input\s+\w+\s+(\w+)\s*=\s*[^;]+;\s*//\s*(.*)$", re.M)
+
+    declarations = motif.findall(source)
+    assert declarations, "aucun paramètre d'entrée trouvé dans l'EA"
+
+    sans_nom = [nom for nom, commentaire in declarations
+                if not commentaire.strip().startswith(nom)]
+    assert not sans_nom, (
+        "Ces paramètres s'afficheront dans MetaTrader sans leur nom, "
+        "et seront introuvables pour qui suit une consigne écrite :\n  "
+        + "\n  ".join(sans_nom))

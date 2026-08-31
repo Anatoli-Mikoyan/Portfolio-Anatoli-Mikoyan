@@ -27,34 +27,34 @@
 //  PARAMÈTRES
 //====================================================================
 input group "=== Connexion ==="
-input string  InpHost              = "127.0.0.1";  // Adresse du serveur d'inférence
-input int     InpPort              = 8912;         // Port
-input int     InpTimeoutMs         = 3000;         // Délai max d'une requête (ms)
-input int     InpHistoryBars       = 1200;         // Barres envoyées (>= min_bars du serveur, cf. type "info")
+input string  InpHost              = "127.0.0.1";  // InpHost : Adresse du serveur d'inférence
+input int     InpPort              = 8912;         // InpPort : Port
+input int     InpTimeoutMs         = 3000;         // InpTimeoutMs : Délai max d'une requête (ms)
+input int     InpHistoryBars       = 1200;         // InpHistoryBars : Barres envoyées (>= min_bars du serveur, cf. type "info")
 
 input group "=== Exécution ==="
-input long    InpMagic             = 770011;       // Magic number
-input double  InpMaxExposure       = 1.0;          // Exposition maximale (fraction du capital)
-input double  InpMinRebalance      = 0.05;         // Bande morte : rebalancement minimal
-input int     InpSlippagePoints    = 20;           // Déviation max autorisée (points)
-input bool    InpUseServerSLTP     = true;         // Utiliser le SL/TP calculé par le modèle
-input bool    InpCloseOnDisconnect = false;        // Fermer les positions si le serveur tombe
+input long    InpMagic             = 770011;       // InpMagic : Magic number
+input double  InpMaxExposure       = 1.0;          // InpMaxExposure : Exposition maximale (fraction du capital)
+input double  InpMinRebalance      = 0.05;         // InpMinRebalance : Bande morte : rebalancement minimal
+input int     InpSlippagePoints    = 20;           // InpSlippagePoints : Déviation max autorisée (points)
+input bool    InpUseServerSLTP     = true;         // InpUseServerSLTP : Utiliser le SL/TP calculé par le modèle
+input bool    InpCloseOnDisconnect = false;        // InpCloseOnDisconnect : Fermer les positions si le serveur tombe
 
 input group "=== Garde-fous locaux (indépendants du serveur) ==="
-input double  InpMaxSpreadPoints   = 30;           // Spread max toléré (points)
-input double  InpMaxDailyLossPct   = 3.0;          // Perte journalière max (%)
-input double  InpMaxDrawdownPct    = 20.0;         // Drawdown max sur le compte (%)
-input double  InpMinEquity         = 0.0;          // Équité plancher (0 = désactivé)
-input bool    InpTradeOnNewBarOnly = true;         // Décider uniquement à la clôture d'une barre
+input double  InpMaxSpreadPoints   = 30;           // InpMaxSpreadPoints : Spread max toléré (points)
+input double  InpMaxDailyLossPct   = 3.0;          // InpMaxDailyLossPct : Perte journalière max (%)
+input double  InpMaxDrawdownPct    = 20.0;         // InpMaxDrawdownPct : Drawdown max sur le compte (%)
+input double  InpMinEquity         = 0.0;          // InpMinEquity : Équité plancher (0 = désactivé)
+input bool    InpTradeOnNewBarOnly = true;         // InpTradeOnNewBarOnly : Décider uniquement à la clôture d'une barre
 
 input group "=== Supervision (§17) ==="
-input int     InpStatusEveryBars   = 24;           // Interroger la supervision toutes les N barres (0 = jamais)
-input bool    InpShowPanel         = true;         // Afficher le panneau de supervision sur le graphique
-input bool    InpBlockOnCritical   = false;        // Passer à plat si le serveur signale une alerte critique
+input int     InpStatusEveryBars   = 24;           // InpStatusEveryBars : Interroger la supervision toutes les N barres (0 = jamais)
+input bool    InpShowPanel         = true;         // InpShowPanel : Afficher le panneau de supervision sur le graphique
+input bool    InpBlockOnCritical   = false;        // InpBlockOnCritical : Passer à plat si le serveur signale une alerte critique
 
 input group "=== Journalisation ==="
-input bool    InpVerbose           = true;         // Journal détaillé
-input bool    InpDryRun            = true;         // true = aucun ordre réellement envoyé
+input bool    InpVerbose           = true;         // InpVerbose : Journal détaillé
+input bool    InpDryRun            = true;         // InpDryRun : true = aucun ordre réellement envoyé
 
 //====================================================================
 //  ÉTAT GLOBAL
