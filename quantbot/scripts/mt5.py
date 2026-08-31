@@ -4,6 +4,7 @@
     python scripts/mt5.py installer    # copie l'EA dans MetaTrader et explique la suite
     python scripts/mt5.py tester       # prouve que la chaîne marche, SANS MetaTrader
     python scripts/mt5.py demarrer     # lance le serveur auquel MetaTrader se connecte
+    python scripts/mt5.py bilan        # où en est le bot, en direct
     python scripts/mt5.py verdict --rapport histo.html   # que valent vos résultats ?
 
 Comment ça marche
@@ -71,6 +72,19 @@ def ok(texte: str) -> None:
 
 def attention(texte: str) -> None:
     print(f"  [!]   {texte}")
+
+
+def _couleur(valeur: float) -> str:
+    """Vert au-dessus de zéro, rouge en dessous — la seule lecture qui compte d'un coup d'œil."""
+    return "\033[32m" if valeur > 0 else ("\033[31m" if valeur < 0 else "")
+
+
+def _sens(position: float) -> str:
+    if position > 1e-9:
+        return "ACHAT"
+    if position < -1e-9:
+        return "VENTE"
+    return "AUCUNE"
 
 
 def echec(texte: str) -> None:
@@ -469,12 +483,99 @@ def _plier(texte: str, largeur: int) -> List[str]:
 
 
 # =======================================================================================
+# Bilan en direct
+# =======================================================================================
+def bilan(port: int) -> int:
+    """Interroge le serveur EN COURS D'EXÉCUTION et affiche où en est le bot.
+
+    Le serveur tient déjà tout : équité rapportée par l'EA à chaque barre, drawdown,
+    nombre de décisions, transactions, latence, alertes. Rien n'est recalculé ici — on
+    demande et on met en forme. C'est une seconde fenêtre à ouvrir quand on veut, sans
+    toucher à celle qui fait tourner le bot.
+    """
+    titre("OÙ EN EST LE BOT")
+
+    from qbot.live.server import SimpleClient
+
+    try:
+        with SimpleClient("127.0.0.1", port, timeout=10.0) as client:
+            snap = client.request({"type": "status"})
+    except (ConnectionRefusedError, OSError):
+        echec(f"Aucun serveur ne répond sur 127.0.0.1:{port}.")
+        print("\n  Le bot n'est pas en train de tourner. Dans une autre fenêtre :")
+        print("      python scripts/mt5.py demarrer --ordres")
+        return 1
+
+    if not snap.get("ok", False):
+        echec(snap.get("error", "le serveur n'a pas de supervision active"))
+        return 1
+
+    n = int(snap.get("n_bars", 0) or 0)
+    if n == 0:
+        attention("Le serveur tourne, mais n'a encore reçu aucune barre.")
+        print("\n  MetaTrader ne s'est pas connecté, ou aucune bougie n'a été")
+        print("  clôturée depuis le démarrage. En H1, comptez jusqu'à une heure.")
+        return 0
+
+    equite = float(snap.get("equity", 0.0) or 0.0)
+    rendement = float(snap.get("total_return", 0.0) or 0.0)
+    dd = float(snap.get("drawdown", 0.0) or 0.0)
+    n_trades = int(snap.get("n_trades", 0) or 0)
+    expo = float(snap.get("net_exposure", 0.0) or 0.0)
+    plat = float(snap.get("flat_rate", 0.0) or 0.0)
+    conf = float(snap.get("mean_confidence", float("nan")) or 0.0)
+    p99 = float(snap.get("p99_latency_ms", 0.0) or 0.0)
+
+    depart = equite / (1.0 + rendement) if rendement > -1.0 else equite
+    gain = equite - depart
+    c = _couleur(gain)
+
+    print(f"  Observé depuis      : {snap.get('first_ts', '?')}")
+    print(f"  Dernière décision   : {snap.get('last_ts', '?')}")
+    print(f"  Décisions prises    : {n:,}  ({n / 24.0:.1f} jours de marché)")
+    print()
+    print(f"  Capital de départ   : {depart:>14,.2f}")
+    print(f"  Capital actuel      : {c}{equite:>14,.2f}\033[0m")
+    print(f"  Résultat            : {c}{gain:>+14,.2f}   ({rendement:+.2%})\033[0m")
+    print(f"  Pire recul          : {dd:>14.2%}")
+    print()
+    print(f"  Transactions        : {n_trades}")
+    print(f"  Position actuelle   : {_sens(expo)} {abs(expo):.1%} du capital")
+    print(f"  Temps passé à plat  : {plat:.0%} des barres")
+    print(f"  Confiance moyenne   : {conf:.2f}")
+    print(f"  Latence p99         : {p99:.0f} ms")
+
+    alertes = snap.get("alerts") or {}
+    n_alertes = int(alertes.get("count", 0) or 0)
+    if n_alertes:
+        pire = alertes.get("worst", "?")
+        print(f"\n  Alertes             : {n_alertes} — la plus grave : {pire}")
+
+    print()
+    print("  " + "─" * (LARGEUR - 4))
+    # Le nombre de transactions decide de ce qu'on peut lire dans ces chiffres. Le
+    # rappeler ICI, a cote du resultat, evite de laisser un gain de trois jours passer
+    # pour une preuve.
+    if n_trades < 30:
+        print(f"  {n_trades} transaction(s) : bien trop peu pour conclure quoi que ce soit.")
+        print("  À ce stade le résultat, bon ou mauvais, est du bruit. Le chiffre")
+        print("  ci-dessus dit que la mécanique tourne, rien de plus.")
+    else:
+        print(f"  {n_trades} transactions. Pour savoir si ce résultat veut dire quelque")
+        print("  chose, exportez l'historique depuis MetaTrader et lancez :")
+        print("      python scripts/mt5.py verdict --rapport chemin\\du\\rapport.html")
+    return 0
+
+
+# =======================================================================================
 def main() -> int:
     p = argparse.ArgumentParser(
         description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("action", choices=["installer", "tester", "demarrer", "verdict"],
+    p.add_argument("action",
+                   choices=["installer", "tester", "demarrer", "bilan", "verdict"],
                    help="installer : copie l'EA | tester : vérifie sans MetaTrader | "
-                        "demarrer : lance le serveur | verdict : juge une période de démo")
+                        "demarrer : lance le serveur | bilan : où en est le bot, "
+                        "en direct | verdict : juge une période de démo")
     p.add_argument("--rapport", type=str, default=None,
                    help="Rapport d'historique exporté depuis MetaTrader (HTML ou CSV)")
     p.add_argument("--capital", type=float, default=0.0,
@@ -498,6 +599,8 @@ def main() -> int:
         return installer_ea(args.dossier)
     if args.action == "tester":
         return tester(modele, args.port)
+    if args.action == "bilan":
+        return bilan(args.port)
     if args.action == "verdict":
         if not args.rapport:
             p.error("verdict exige --rapport (dans MetaTrader : Historique > clic droit "

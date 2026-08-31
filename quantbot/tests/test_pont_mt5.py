@@ -228,3 +228,45 @@ def test_les_libelles_des_parametres_portent_leur_nom():
         "Ces paramètres s'afficheront dans MetaTrader sans leur nom, "
         "et seront introuvables pour qui suit une consigne écrite :\n  "
         + "\n  ".join(sans_nom))
+
+
+# ---------------------------------------------------------------------------------------
+# Bilan en direct
+# ---------------------------------------------------------------------------------------
+def test_le_bilan_sans_serveur_explique_au_lieu_de_planter(capsys):
+    """Le cas le plus fréquent : la commande lancée alors que le bot ne tourne pas."""
+    code = mt5.bilan(port=59999)          # port certainement libre
+    sortie = capsys.readouterr().out
+
+    assert code == 1
+    assert "Aucun serveur ne répond" in sortie
+    assert "demarrer --ordres" in sortie, "la commande de démarrage doit être rappelée"
+
+
+def test_les_helpers_daffichage_sont_definis():
+    """`bilan` utilisait des fonctions définies dans un AUTRE script.
+
+    Le défaut ne se voyait qu'à l'exécution, sur un serveur réellement démarré —
+    donc jamais pendant le développement, et exactement au moment où l'utilisateur
+    aurait voulu consulter ses résultats.
+    """
+    assert mt5._couleur(1.0) != mt5._couleur(-1.0), "gain et perte doivent différer"
+    assert mt5._couleur(0.0) == ""
+    assert mt5._sens(0.3) == "ACHAT"
+    assert mt5._sens(-0.3) == "VENTE"
+    assert mt5._sens(0.0) == "AUCUNE"
+
+
+def test_toutes_les_sous_commandes_sont_appelables():
+    """Chaque action annoncée par l'aide doit exister comme fonction.
+
+    Garde-fou contre une sous-commande ajoutée à la liste des choix mais jamais
+    branchée — l'utilisateur lirait son nom dans l'aide et obtiendrait une erreur.
+    """
+    import inspect
+
+    source = inspect.getsource(mt5.main)
+    for action in ("installer", "tester", "demarrer", "bilan", "verdict"):
+        assert f'"{action}"' in source, f"{action} absente de main()"
+    for fonction in ("installer_ea", "tester", "demarrer", "bilan", "verdict"):
+        assert callable(getattr(mt5, fonction, None)), f"{fonction} introuvable"
