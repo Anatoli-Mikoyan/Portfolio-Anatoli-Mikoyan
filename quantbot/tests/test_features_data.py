@@ -252,14 +252,21 @@ def test_la_cause_survit_a_la_troncature_de_metatrader(ohlcv):
     assert "volume" in debut, f"cause absente des 90 premiers caractères : {debut!r}"
 
 
-def test_un_spread_constant_est_aussi_detecte(ohlcv):
+def test_un_spread_constant_ne_bloque_plus_le_pipeline(ohlcv):
+    """Un spread constant est désormais toléré, avec un z-score nul.
+
+    Ce test verrouillait auparavant le comportement inverse — l'échec du pipeline
+    entier. C'était le défaut, pas la spécification : une seule feature indéfinie
+    ne doit pas emporter les soixante-quatre autres, et un spread constant a par
+    définition un z-score nul.
+    """
     pipe = _pipeline_entraine(ohlcv)
     casse = ohlcv.copy()
     casse["spread"] = 0.0
 
-    with pytest.raises(ValueError) as exc:
-        pipe.transform_latest(casse, n_rows=8)
-    assert "spread" in str(exc.value)
+    sortie = pipe.transform_latest(casse, n_rows=8)
+    assert sortie.shape[0] == 8
+    assert np.isfinite(sortie).all()
 
 
 def test_un_flux_correct_ne_declenche_aucun_diagnostic(ohlcv):
@@ -275,3 +282,52 @@ def test_un_historique_trop_court_garde_son_propre_message(ohlcv):
     pipe = _pipeline_entraine(ohlcv)
     with pytest.raises(ValueError, match="Historique insuffisant"):
         pipe.transform_latest(ohlcv.head(50), n_rows=8)
+
+
+def test_un_spread_constant_donne_un_zscore_nul_et_non_des_nan():
+    """Une seule feature indéfinie vidait les soixante-quatre autres.
+
+    `spread_z` divisait par l'écart-type glissant du spread relatif, en remplaçant
+    un écart-type nul par NaN. Un spread constant — le cas dès que le flux n'en
+    fournit pas et qu'on réapplique la convention d'entraînement — rendait donc la
+    colonne entièrement NaN, et le `dropna` du pipeline emportait chaque ligne.
+
+    Le défaut était masqué à l'entraînement : les données passent par un CSV, dont
+    l'arrondi donnait à ce spread constant un écart-type de 1,8e-17. Non nul, donc
+    jamais remplacé, donc divisé — `spread_z` ne valait que du bruit de virgule
+    flottante amplifié. Le test fixe la convention correcte : constant ⇒ z = 0.
+    """
+    from qbot.features.microstructure import build_microstructure_features
+
+    idx = pd.date_range("2024-01-01", periods=600, freq="1h", tz="UTC")
+    rng = np.random.default_rng(0)
+    close = pd.Series(1.10 + np.cumsum(rng.normal(0, 1e-4, 600)), index=idx)
+    df = pd.DataFrame({
+        "open": close, "high": close * 1.0005, "low": close * 0.9995, "close": close,
+        "volume": rng.integers(100, 1000, 600).astype(float),
+        "spread": close * 1.0e-4,          # exactement constant en relatif
+    }, index=idx)
+
+    out = build_microstructure_features(df)
+    z = out["spread_z"].iloc[250:]         # après la fenêtre de 200
+
+    assert np.isfinite(z).all(), "spread_z reste indéfini sur un spread constant"
+    assert (z.abs() < 1e-9).all(), "un spread constant doit donner un z-score nul"
+
+
+def test_un_spread_variable_garde_un_zscore_informatif():
+    """La correction ne doit pas aplatir un spread qui varie réellement."""
+    from qbot.features.microstructure import build_microstructure_features
+
+    idx = pd.date_range("2024-01-01", periods=600, freq="1h", tz="UTC")
+    rng = np.random.default_rng(1)
+    close = pd.Series(1.10 + np.cumsum(rng.normal(0, 1e-4, 600)), index=idx)
+    df = pd.DataFrame({
+        "open": close, "high": close * 1.0005, "low": close * 0.9995, "close": close,
+        "volume": rng.integers(100, 1000, 600).astype(float),
+        "spread": close * rng.uniform(0.5e-4, 2e-4, 600),      # spread réellement variable
+    }, index=idx)
+
+    z = build_microstructure_features(df)["spread_z"].iloc[250:]
+    assert np.isfinite(z).all()
+    assert z.std() > 0.1, "un spread variable doit produire un z-score qui varie"

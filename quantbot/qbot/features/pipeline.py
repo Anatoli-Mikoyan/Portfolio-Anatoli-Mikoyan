@@ -236,9 +236,11 @@ class FeaturePipeline:
                 fautives.append((colonne, "constante sur toute la fenêtre"))
 
         if not fautives:
-            return (f"Historique trop court malgré {len(df_window)} barres : "
-                    f"{obtenues} ligne(s) de features valides sur {demandees} demandée(s). "
-                    "Fournir davantage de barres.")
+            # Aucune colonne d'ENTREE n'est dégénérée : la cause est dans une feature
+            # dérivée. La nommer est le seul moyen de la corriger — sans cela le message
+            # renvoie vers « fournir plus de barres », ce qui peut être faux et fait
+            # perdre un temps considérable.
+            return self._nommer_features_mortes(df_window, obtenues, demandees)
 
         noms = ", ".join(f"{c} ({raison})" for c, raison in fautives)
         log.error(
@@ -256,6 +258,51 @@ class FeaturePipeline:
         return (f"Flux incomplet — {noms} : indicateurs de microstructure indéfinis, "
                 f"{obtenues} ligne exploitable sur {demandees}. Détail dans le journal "
                 "du serveur.")
+
+    # -----------------------------------------------------------------------------------
+    def _nommer_features_mortes(self, df_window: pd.DataFrame, obtenues: int,
+                                demandees: int) -> str:
+        """Identifie les features indéfinies, et à quelle étape elles le deviennent.
+
+        Une feature peut mourir au calcul (colonne brute vide) ou à la mise à l'échelle
+        (écart-type glissant nul : le z-score divise par zéro). Les deux se corrigent
+        différemment, et les confondre égare.
+        """
+        try:
+            brut = self.build_raw(df_window)
+        except Exception as exc:  # noqa: BLE001 - le diagnostic ne doit jamais masquer
+            return (f"Le calcul des features a échoué : {type(exc).__name__}: {exc}")
+
+        arr = brut.to_numpy(dtype=float)
+        fini = np.isfinite(arr)
+        mortes_brutes = [c for i, c in enumerate(brut.columns) if not fini[:, i].any()]
+
+        # Colonnes brutes constantes : leur z-score glissant divise par zéro.
+        constantes = []
+        for i, colonne in enumerate(brut.columns):
+            valeurs = arr[:, i][np.isfinite(arr[:, i])]
+            if valeurs.size and float(np.std(valeurs)) == 0.0:
+                constantes.append(colonne)
+
+        echelle = self.transform(df_window)
+        if len(echelle) == 0 and not mortes_brutes and not constantes:
+            # Le calcul brut est sain : c'est la fenêtre de mise à l'échelle qui manque.
+            return (f"{len(df_window)} barres fournies : les features brutes se calculent, "
+                    f"mais la fenêtre de normalisation ({self.cfg.scaler_window} barres) "
+                    "ne laisse aucune ligne complète. Fournir davantage de barres.")
+
+        details = [f"{obtenues} ligne(s) de features valides sur {demandees} demandée(s)."]
+        if mortes_brutes:
+            details.append(f"Features jamais définies ({len(mortes_brutes)}) : "
+                           + ", ".join(mortes_brutes[:6])
+                           + ("…" if len(mortes_brutes) > 6 else ""))
+        if constantes:
+            details.append(f"Features constantes, donc de z-score indéfini "
+                           f"({len(constantes)}) : " + ", ".join(constantes[:6])
+                           + ("…" if len(constantes) > 6 else ""))
+        log.error("Features indéfinies sur %d barres. %s", len(df_window),
+                  " ".join(details[1:]))
+        return " ".join(details)
 
     # --- persistance ---------------------------------------------------------------------
     def save(self, path: str | Path) -> Path:

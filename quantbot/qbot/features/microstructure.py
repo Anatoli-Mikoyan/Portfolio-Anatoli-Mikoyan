@@ -122,6 +122,19 @@ def build_microstructure_features(df: pd.DataFrame) -> pd.DataFrame:
     out["vol_ratio_park_cc"] = out["park_vol"] / cc_vol
     if "spread" in df.columns:
         out["spread_rel"] = (df["spread"] / c) * 1e4
-        out["spread_z"] = (out["spread_rel"] - out["spread_rel"].rolling(200).mean()) / \
-                          out["spread_rel"].rolling(200).std(ddof=0).replace(0.0, np.nan)
+        # Un spread relatif CONSTANT a un z-score nul par définition : il est exactement
+        # sur sa moyenne. Le `replace(0.0, np.nan)` d'origine produisait au contraire des
+        # NaN sur toute la colonne, et le `dropna` du pipeline vidait alors la matrice
+        # entière — soixante-quatre features correctes emportées par une seule.
+        #
+        # Le cas n'est pas théorique et il était masqué : les données d'entraînement
+        # passent par un CSV, dont l'arrondi donnait à ce spread constant un écart-type
+        # de 1,8e-17. Non nul, donc jamais remplacé, donc divisé — et `spread_z` ne
+        # valait alors que du bruit de virgule flottante amplifié d'un facteur 1e17.
+        # En service, le spread reconstruit est exactement constant, l'écart-type est
+        # exactement nul, et la colonne mourait pour de bon.
+        moyenne = out["spread_rel"].rolling(200).mean()
+        ecart = out["spread_rel"].rolling(200).std(ddof=0)
+        z = (out["spread_rel"] - moyenne) / ecart.mask(ecart <= 1e-12)
+        out["spread_z"] = z.mask((ecart <= 1e-12) & moyenne.notna(), 0.0)
     return out
