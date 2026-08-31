@@ -195,8 +195,67 @@ class FeaturePipeline:
             )
         out = self.transform(df_window)
         if len(out) < n_rows:
-            raise ValueError(f"Seulement {len(out)} lignes de features valides, {n_rows} demandées.")
+            raise ValueError(self._pourquoi_aucune_ligne(df_window, len(out), n_rows))
         return out.tail(n_rows).to_numpy(dtype=np.float32)
+
+    # -----------------------------------------------------------------------------------
+    def _pourquoi_aucune_ligne(self, df_window: pd.DataFrame, obtenues: int,
+                               demandees: int) -> str:
+        """Explique la disette de features, au lieu de la constater.
+
+        « Seulement 0 lignes de features valides » est vrai et inutilisable : l'historique
+        est suffisant, la cause est ailleurs et l'utilisateur n'a aucun moyen de la
+        deviner. Or elle est presque toujours la même — une colonne d'entrée constante ou
+        nulle rend une poignée de features indéfinies sur TOUTE la fenêtre, et le
+        `dropna` supprime alors chaque ligne, y compris celles dont les soixante autres
+        features étaient parfaitement calculées.
+
+        Le cas concret : un flux MetaTrader qui ne renseigne pas le volume. `amihud`
+        divise par le volume en notionnel, `kyle_lambda` régresse dessus, `vpin` le
+        normalise : trois colonnes vides suffisent à tout emporter.
+
+        La CAUSE passe en tête du message : MetaTrader tronque les longues lignes de son
+        journal, et une explication placée après le constat n'atteindrait jamais l'écran
+        de celui qui en a besoin. Le mode d'emploi complet part dans le journal du
+        serveur, qui ne tronque pas.
+
+        On ne comble pas ces colonnes d'office : le modèle a été entraîné avec de vraies
+        valeurs, l'alimenter de zéros le ferait décider sur des entrées qu'il n'a jamais
+        vues. On refuse, mais on dit quoi réparer.
+        """
+        fautives = []
+        for colonne in ("volume", "spread"):
+            if colonne not in df_window.columns:
+                continue
+            valeurs = pd.to_numeric(df_window[colonne], errors="coerce").to_numpy(dtype=float)
+            if not np.isfinite(valeurs).any():
+                fautives.append((colonne, "aucune valeur exploitable"))
+            elif float(np.nanmax(np.abs(valeurs))) == 0.0:
+                fautives.append((colonne, "zéro sur toute la fenêtre"))
+            elif float(np.nanstd(valeurs)) == 0.0:
+                fautives.append((colonne, "constante sur toute la fenêtre"))
+
+        if not fautives:
+            return (f"Historique trop court malgré {len(df_window)} barres : "
+                    f"{obtenues} ligne(s) de features valides sur {demandees} demandée(s). "
+                    "Fournir davantage de barres.")
+
+        noms = ", ".join(f"{c} ({raison})" for c, raison in fautives)
+        log.error(
+            "Flux incomplet : %s. Les indicateurs de microstructure (Amihud, Kyle, VPIN, "
+            "z-score du spread) divisent par cette grandeur : indéfinis sur toute la "
+            "fenêtre, toutes les lignes sont écartées — y compris celles dont les autres "
+            "features étaient correctes.\n"
+            "  Côté MetaTrader, le flux du courtier ne fournit pas cette donnée.\n"
+            "  - vérifier Observation du marché > clic droit sur le symbole > Spécification ;\n"
+            "  - essayer un autre symbole, ou un autre courtier de démonstration.\n"
+            "  Les valeurs ne sont pas comblées d'office : le modèle a été entraîné avec "
+            "de vraies valeurs, lui en donner de fausses le ferait décider sur des "
+            "entrées jamais rencontrées.", noms)
+
+        return (f"Flux incomplet — {noms} : indicateurs de microstructure indéfinis, "
+                f"{obtenues} ligne exploitable sur {demandees}. Détail dans le journal "
+                "du serveur.")
 
     # --- persistance ---------------------------------------------------------------------
     def save(self, path: str | Path) -> Path:

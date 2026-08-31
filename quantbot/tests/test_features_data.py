@@ -201,3 +201,77 @@ def test_loaded_data_yields_a_sane_annualisation_factor(tmp_path):
 
     assert infer_bars_per_year(loaded.index) == pytest.approx(6240.0, rel=1e-9)
     assert infer_bars_per_year(df.index) == pytest.approx(6240.0, rel=1e-9)
+
+
+# ---------------------------------------------------------------------------------------
+# Diagnostic d'un flux incomplet
+#
+# Un courtier qui ne renseigne pas le volume rend `amihud`, `kyle_lambda` et `vpin`
+# indéfinis sur TOUTE la fenêtre. Le `dropna` supprime alors chaque ligne, y compris
+# celles dont les soixante autres features étaient parfaitement calculées — et le
+# message se contentait de constater « 0 lignes valides », sans dire pourquoi ni quoi
+# réparer. Un utilisateur devant ce message n'a aucun moyen de deviner.
+# ---------------------------------------------------------------------------------------
+def _pipeline_entraine(ohlcv):
+    cfg = FeatureConfig(returns_windows=(1, 5), vol_windows=(10,), ema_windows=(10,),
+                        use_microstructure=True, use_calendar=False, scaler_window=200)
+    pipe = FeaturePipeline(cfg)
+    pipe.fit_transform(ohlcv)
+    return pipe
+
+
+def test_un_volume_nul_est_nomme_dans_le_message(ohlcv):
+    pipe = _pipeline_entraine(ohlcv)
+    casse = ohlcv.copy()
+    casse["volume"] = 0.0
+
+    with pytest.raises(ValueError) as exc:
+        pipe.transform_latest(casse, n_rows=8)
+
+    message = str(exc.value)
+    assert "volume" in message, f"la colonne fautive n'est pas nommée : {message}"
+    assert "Flux incomplet" in message
+
+
+def test_la_cause_survit_a_la_troncature_de_metatrader(ohlcv):
+    """MetaTrader tronque les longues lignes de son journal.
+
+    Une explication placée après le constat n'atteindrait jamais l'écran de celui
+    qui en a besoin — c'est exactement ce qui s'est produit : l'utilisateur a vu
+    « Seulement 0 lignes de features valides, 16 demand\\u00… » et rien de plus.
+    Les 90 premiers caractères doivent donc suffire à comprendre.
+    """
+    pipe = _pipeline_entraine(ohlcv)
+    casse = ohlcv.copy()
+    casse["volume"] = 0.0
+
+    with pytest.raises(ValueError) as exc:
+        pipe.transform_latest(casse, n_rows=8)
+
+    debut = str(exc.value)[:90]
+    assert "volume" in debut, f"cause absente des 90 premiers caractères : {debut!r}"
+
+
+def test_un_spread_constant_est_aussi_detecte(ohlcv):
+    pipe = _pipeline_entraine(ohlcv)
+    casse = ohlcv.copy()
+    casse["spread"] = 0.0
+
+    with pytest.raises(ValueError) as exc:
+        pipe.transform_latest(casse, n_rows=8)
+    assert "spread" in str(exc.value)
+
+
+def test_un_flux_correct_ne_declenche_aucun_diagnostic(ohlcv):
+    """Le diagnostic ne doit pas se déclencher sur des données saines."""
+    pipe = _pipeline_entraine(ohlcv)
+    sortie = pipe.transform_latest(ohlcv, n_rows=8)
+    assert sortie.shape[0] == 8
+    assert np.isfinite(sortie).all()
+
+
+def test_un_historique_trop_court_garde_son_propre_message(ohlcv):
+    """Ne pas confondre les deux causes : trop peu de barres n'est pas un flux cassé."""
+    pipe = _pipeline_entraine(ohlcv)
+    with pytest.raises(ValueError, match="Historique insuffisant"):
+        pipe.transform_latest(ohlcv.head(50), n_rows=8)
