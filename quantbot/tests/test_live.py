@@ -565,3 +565,29 @@ def test_la_convention_dentrainement_est_celle_de_start(trained):
     assert float(trouve.group(1)) == pytest.approx(SPREAD_ENTRAINEMENT_BPS), (
         f"start.py utilise {trouve.group(1)}, l'inférence {SPREAD_ENTRAINEMENT_BPS} : "
         "le modèle serait servi avec une distribution qu'il n'a pas apprise")
+
+
+def test_chaque_decision_est_journalisee_cote_serveur(trained, caplog):
+    """La fenêtre du serveur est celle que l'opérateur garde ouverte.
+
+    N'y journaliser que les avertissements laisse croire qu'il ne se passe rien
+    alors que le bot décide à chaque barre — indiscernable d'une panne. Le motif
+    doit accompagner la décision : une exposition nulle sans explication ne dit
+    pas si le modèle a choisi de rester à plat ou si un garde-fou l'a bloqué.
+    """
+    import logging
+
+    model_dir, df = trained
+    engine = _moteur(model_dir, dry_run=False, allow_real_account=True)
+
+    with caplog.at_level(logging.INFO, logger="qbot.live.engine"):
+        resp = engine.predict(_requete_compte(df, engine, "demo"))
+
+    lignes = [r.getMessage() for r in caplog.records if "Décision" in r.getMessage()]
+    assert lignes, "aucune décision journalisée côté serveur"
+    ligne = lignes[-1]
+    assert "EURUSD" in ligne
+    assert "exposition" in ligne
+    assert resp.status in ligne
+    if resp.reasons:
+        assert resp.reasons[0] in ligne, "le motif de la décision n'est pas journalisé"

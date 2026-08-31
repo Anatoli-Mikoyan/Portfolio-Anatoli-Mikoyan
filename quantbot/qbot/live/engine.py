@@ -418,6 +418,20 @@ class InferenceEngine:
                 latency_ms=round((time.perf_counter() - t0) * 1000.0, 3),
             )
             self.last_decision = resp
+
+            # Chaque décision est journalisée côté serveur, pas seulement côté EA.
+            # C'est la fenêtre du serveur que l'on garde ouverte pour surveiller le
+            # bot ; n'y voir que les avertissements laisse croire qu'il ne se passe
+            # rien alors qu'il décide à chaque barre. Le motif du blocage est inclus :
+            # une exposition nulle sans explication est indiscernable d'une panne.
+            log.info("Décision %s %s | exposition %+.3f (actuelle %+.3f) | %s | "
+                     "confiance %.2f | %.0f ms%s",
+                     msg.get("symbol", "?"),
+                     str(msg.get("timeframe", "?")).replace("PERIOD_", ""),
+                     resp.target_exposure, float(msg.get("current_exposure", 0.0)),
+                     resp.status, resp.confidence, resp.latency_ms,
+                     (" | " + " ; ".join(reasons)) if reasons else "")
+
             if self.monitor is not None:
                 self._notify_monitor(msg, resp, df, ts, spread_bps, data_age, feats[-1])
             return resp
