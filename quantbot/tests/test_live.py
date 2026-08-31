@@ -476,3 +476,92 @@ def test_la_discordance_nempeche_jamais_de_fermer(trained):
     resp = engine.predict(msg)
 
     assert abs(resp.target_exposure) <= 0.4 + 1e-9
+
+
+# ---------------------------------------------------------------------------------------
+# Spread : convention d'entraînement pour les features, valeur réelle pour le garde-fou
+#
+# Les historiques EURUSD publics n'ont pas de spread ; scripts/start.py en fabrique un
+# (close * 1e-4) et le modèle apprend avec celui-là. MetaTrader transmet le spread réel
+# du courtier — souvent nul sur les barres que le terminal n'a pas collectées lui-même.
+# Servir cette valeur aux features serait un écart entraînement/service ; l'ignorer pour
+# le garde-fou serait renoncer à un vrai contrôle de risque. Les deux usages divergent.
+# ---------------------------------------------------------------------------------------
+def _requete_spread(df: pd.DataFrame, engine, spread: float) -> dict:
+    tail = df.iloc[-engine.min_bars:]
+    return {
+        "type": "predict", "symbol": "EURUSD", "timeframe": "PERIOD_H1",
+        "account_type": "demo", "equity": 10_000.0, "balance": 10_000.0,
+        "current_exposure": 0.0,
+        "bars": [[int(ts.timestamp()), float(r.open), float(r.high), float(r.low),
+                  float(r.close), float(r.volume), spread] for ts, r in tail.iterrows()],
+    }
+
+
+def test_un_spread_nul_ne_bloque_plus_la_decision(trained):
+    """Le cas rencontré en production : MetaTrader n'a pas de spread historique."""
+    model_dir, df = trained
+    engine = _moteur(model_dir, dry_run=False, allow_real_account=True)
+    resp = engine.predict(_requete_spread(df, engine, 0.0))
+
+    assert resp.ok, f"décision refusée sur spread nul : {resp.reasons}"
+    assert "features" not in " ".join(resp.reasons).lower()
+
+
+def test_le_garde_fou_ignore_le_spread_reconstruit(trained):
+    """Sans spread réel, le contrôle doit être NEUTRE, pas faussement rassuré.
+
+    Reconstruire une valeur pour les features est légitime — c'est la convention
+    d'entraînement. La passer au garde-fou ne le serait pas : il conclurait « spread
+    acceptable » à partir d'un nombre que personne n'a mesuré.
+    """
+    from qbot.config import RiskConfig
+    from qbot.live.engine import InferenceEngine, load_bundle
+
+    model_dir, df = trained
+    # Seuil inatteignable : tout spread réel connu doit faire refuser.
+    strict = RiskConfig(max_spread_bps=0.001)
+    engine = InferenceEngine(load_bundle(model_dir), strict, dry_run=False,
+                             replay=True, allow_real_account=True)
+
+    # Spread réel transmis et large : le garde-fou doit mordre.
+    resp = engine.predict(_requete_spread(df, engine, 0.01))
+    assert any("spread" in r for r in resp.reasons), (
+        f"le garde-fou n'a pas vu le spread réel : {resp.reasons}")
+
+    # Spread absent : le contrôle est neutre, il ne doit PAS invoquer le spread.
+    engine2 = InferenceEngine(load_bundle(model_dir), strict, dry_run=False,
+                              replay=True, allow_real_account=True)
+    resp2 = engine2.predict(_requete_spread(df, engine2, 0.0))
+    assert not any("spread" in r for r in resp2.reasons), (
+        "le garde-fou a jugé un spread qu'il n'a pas reçu : " + str(resp2.reasons))
+
+
+def test_un_spread_reel_exploitable_est_conserve(trained):
+    """Quand le courtier fournit un vrai spread variable, on ne le remplace pas."""
+    from qbot.live.engine import _spread_degenere
+
+    assert _spread_degenere(np.zeros(10))
+    assert _spread_degenere(np.full(10, 0.0001))          # constant : inexploitable
+    assert _spread_degenere(np.full(10, np.nan))
+    assert not _spread_degenere(np.linspace(1e-5, 2e-5, 10))
+
+
+def test_la_convention_dentrainement_est_celle_de_start(trained):
+    """La constante de service doit être celle qui a produit les données d'entraînement.
+
+    Si `scripts/start.py` change son spread fabriqué sans que l'inférence suive, le
+    modèle serait servi avec une distribution différente de celle qu'il a apprise —
+    silencieusement.
+    """
+    import re
+
+    from qbot.live.engine import SPREAD_ENTRAINEMENT_BPS
+
+    source = (Path(__file__).resolve().parent.parent / "scripts" / "start.py").read_text(
+        encoding="utf-8")
+    trouve = re.search(r'df\["spread"\]\s*=\s*df\["close"\]\s*\*\s*([0-9.e+-]+)', source)
+    assert trouve, "scripts/start.py ne fabrique plus le spread comme attendu"
+    assert float(trouve.group(1)) == pytest.approx(SPREAD_ENTRAINEMENT_BPS), (
+        f"start.py utilise {trouve.group(1)}, l'inférence {SPREAD_ENTRAINEMENT_BPS} : "
+        "le modèle serait servi avec une distribution qu'il n'a pas apprise")

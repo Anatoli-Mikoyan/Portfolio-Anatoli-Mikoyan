@@ -116,6 +116,39 @@ def meme_periode(attendue: str, recue: str) -> bool:
     return a == b
 
 
+# Convention de spread de l'entraînement.
+#
+# Les historiques EURUSD publics ne contiennent pas de spread. `scripts/start.py` en
+# fabrique donc un — `close * 1e-4`, soit 1 pip — et le modèle apprend avec celui-là.
+# En production, MetaTrader transmet le spread RÉEL du courtier : une grandeur d'une
+# tout autre nature, souvent nulle sur les barres historiques que le terminal n'a pas
+# lui-même collectées.
+#
+# Deux conséquences, et deux traitements distincts :
+#
+#  - Pour les FEATURES, servir le vrai spread serait un écart entraînement/service : le
+#    modèle n'a jamais vu cette distribution. Pire, un spread nul rend indéfinis le
+#    z-score du spread et les indicateurs de microstructure, et le pipeline écarte alors
+#    toutes les lignes. On réapplique donc la convention d'entraînement, à l'identique.
+#
+#  - Pour le GARDE-FOU de spread, c'est l'inverse : refuser de trader quand le marché
+#    est trop cher exige la vraie valeur, celle que paie le compte. Elle est conservée.
+#
+# Ce n'est pas fabriquer une donnée pour faire passer un calcul : c'est reproduire en
+# service exactement ce qui a été mesuré en backtest. Le vrai défaut est en amont — un
+# modèle ne devrait pas apprendre sur une colonne inventée — et cette constante existe
+# pour le rendre visible plutôt que de le laisser agir en silence.
+SPREAD_ENTRAINEMENT_BPS = 1.0e-4
+
+
+def _spread_degenere(colonne: np.ndarray) -> bool:
+    """Le spread transmis est-il inexploitable — absent, nul ou constant ?"""
+    fini = colonne[np.isfinite(colonne)]
+    if fini.size == 0:
+        return True
+    return float(np.max(np.abs(fini))) == 0.0 or float(np.std(fini)) == 0.0
+
+
 class InferenceEngine:
     """Transforme une requête de l'EA en décision d'exposition, garde-fous compris."""
 
@@ -159,6 +192,7 @@ class InferenceEngine:
         self.allow_real_account = bool(allow_real_account)
         self._account_seen: str = ""
         self._discordance_signalee: str = ""
+        self._spread_normalise_signale = False
         self.n_requests = 0
         self.last_decision: Optional[PredictResponse] = None
 
@@ -258,6 +292,20 @@ class InferenceEngine:
 
         try:
             df = self._to_frame(msg["bars"])
+
+            # Spread réel du courtier : conservé pour le garde-fou AVANT toute
+            # normalisation, car c'est lui que paie le compte.
+            spread_reel = df["spread"].to_numpy(dtype=float).copy()
+            if _spread_degenere(spread_reel):
+                df = df.assign(spread=df["close"] * SPREAD_ENTRAINEMENT_BPS)
+                if not self._spread_normalise_signale:
+                    self._spread_normalise_signale = True
+                    log.warning(
+                        "Le flux ne transmet pas de spread exploitable (nul ou constant). "
+                        "La convention d'entraînement est réappliquée pour les features "
+                        "(close * %.0e), afin de servir au modèle ce qu'il a vu en "
+                        "apprentissage. Le garde-fou de spread continue d'utiliser la "
+                        "valeur réelle du terminal.", SPREAD_ENTRAINEMENT_BPS)
             window = int(self.env_cfg.window)
 
             # Même code de features qu'à l'entraînement — c'est le point non négociable.
@@ -290,8 +338,14 @@ class InferenceEngine:
             equity = float(msg.get("equity", 1.0))
             self.guard.update_equity(equity, ts)
             self.guard.tick()
-            spread_bps = (float(df["spread"].iloc[-1]) / float(df["close"].iloc[-1]) * 1e4
-                          if float(df["spread"].iloc[-1]) > 0 else None)
+            # Le garde-fou lit le spread RÉEL, jamais celui normalisé pour les features :
+            # refuser de trader quand le marché est trop cher n'a de sens qu'avec la
+            # valeur que paie effectivement le compte. `None` quand le terminal ne la
+            # transmet pas — le contrôle est alors neutre plutôt que faussement rassuré
+            # par une valeur reconstruite.
+            dernier_spread = float(spread_reel[-1]) if spread_reel.size else 0.0
+            spread_bps = (dernier_spread / float(df["close"].iloc[-1]) * 1e4
+                          if np.isfinite(dernier_spread) and dernier_spread > 0 else None)
             data_age = max((datetime.now(timezone.utc) - df.index[-1].to_pydatetime()).total_seconds(), 0.0)
 
             decision = self.guard.check(
