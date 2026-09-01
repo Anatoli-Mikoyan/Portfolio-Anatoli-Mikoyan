@@ -591,3 +591,29 @@ def test_chaque_decision_est_journalisee_cote_serveur(trained, caplog):
     assert resp.status in ligne
     if resp.reasons:
         assert resp.reasons[0] in ligne, "le motif de la décision n'est pas journalisé"
+
+
+def test_le_compteur_de_decisions_ignore_les_requetes_refusees(trained):
+    """« Attendre une décision » doit attendre une VRAIE décision.
+
+    `n_requests` compte aussi les requêtes rejetées — historique trop court, flux
+    incomplet. S'en servir pour le rendez-vous hebdomadaire ferait éteindre le PC
+    sur un refus, en croyant la décision prise.
+    """
+    model_dir, df = trained
+    engine = _moteur(model_dir, dry_run=False, allow_real_account=True)
+
+    assert engine.n_decisions == 0
+
+    # Requête invalide : comptée comme requête, pas comme décision.
+    refus = engine.predict({"type": "predict", "symbol": "EURUSD",
+                            "timeframe": "PERIOD_H1", "bars": [[0, 1, 1, 1, 1, 1, 0]]})
+    assert not refus.ok
+    assert engine.n_requests == 1
+    assert engine.n_decisions == 0, "une requête refusée a été comptée comme décision"
+
+    # Requête valide : les deux montent.
+    bonne = engine.predict(_requete_compte(df, engine, "demo"))
+    assert bonne.ok
+    assert engine.n_requests == 2
+    assert engine.n_decisions == 1

@@ -328,7 +328,8 @@ def tester(modele: Path, port: int) -> int:
 # =======================================================================================
 # Serveur
 # =======================================================================================
-def demarrer(modele: Path, port: int, ordres: bool, argent_reel: bool, rejeu: bool) -> int:
+def demarrer(modele: Path, port: int, ordres: bool, argent_reel: bool,
+             rejeu: bool, stop_apres: int = 0) -> int:
     titre("SERVEUR D'INFÉRENCE")
 
     if not modele.exists():
@@ -411,7 +412,42 @@ def demarrer(modele: Path, port: int, ordres: bool, argent_reel: bool, rejeu: bo
 
     cfg = LiveConfig(host="127.0.0.1", port=port, model_path=str(modele),
                      dry_run=not ordres)
-    serve(modele, cfg, block=True, replay=rejeu, allow_real_account=argent_reel)
+
+    if stop_apres <= 0:
+        serve(modele, cfg, block=True, replay=rejeu, allow_real_account=argent_reel)
+        return 0
+
+    # Mode « une décision puis on éteint ». Le serveur tourne en arrière-plan et l'on
+    # attend le compte voulu : sans cela, l'utilisateur doit deviner quand MetaTrader a
+    # fini de décider, et éteint soit trop tôt — la décision est perdue — soit bien
+    # après, ce qui rend le rendez-vous hebdomadaire pénible.
+    print(f"  En attente de {stop_apres} décision(s), puis arrêt automatique.")
+    print("  Ouvrez MetaTrader maintenant : l'EA se connectera tout seul.\n")
+    serveur = serve(modele, cfg, block=False, replay=rejeu,
+                    allow_real_account=argent_reel)
+    depart = time.time()
+    try:
+        while serveur.engine.n_decisions < stop_apres:
+            time.sleep(1.0)
+    except KeyboardInterrupt:
+        print("\n  Interrompu avant la décision.")
+        serveur.shutdown(); serveur.server_close()
+        return 1
+
+    d = serveur.engine.last_decision
+    serveur.shutdown(); serveur.server_close()
+    print()
+    ok(f"{serveur.engine.n_decisions} décision(s) prise(s) en "
+       f"{time.time() - depart:.0f} s.")
+    if d is not None:
+        print(f"      exposition visée : {d.target_exposure:+.3f}")
+        print(f"      état             : {d.status}")
+        if d.reasons:
+            print(f"      motifs           : {' ; '.join(str(r) for r in d.reasons)}")
+    print()
+    print("  C'est fait. Vous pouvez fermer MetaTrader et éteindre le PC.")
+    print("  La position éventuellement ouverte reste chez le courtier, protégée")
+    print("  par son stop. Rendez-vous la semaine prochaine.")
     return 0
 
 
@@ -590,6 +626,10 @@ def main() -> int:
                         "--argent-reel.")
     p.add_argument("--argent-reel", action="store_true", dest="argent_reel",
                    help="Lève le blocage des comptes RÉELS. Demande une confirmation.")
+    p.add_argument("--stop-apres", type=int, default=0, dest="stop_apres",
+                   metavar="N",
+                   help="S'arrête tout seul après N décisions. Pour le rendez-vous "
+                        "hebdomadaire : on allume, il décide, il le dit, on éteint.")
     p.add_argument("--rejeu", action="store_true",
                    help="Neutralise le contrôle de fraîcheur, pour tester sur barres passées")
     args = p.parse_args()
@@ -606,7 +646,8 @@ def main() -> int:
             p.error("verdict exige --rapport (dans MetaTrader : Historique > clic droit "
                     "> Rapport > HTML)")
         return verdict(args.rapport, args.capital)
-    return demarrer(modele, args.port, args.ordres, args.argent_reel, args.rejeu)
+    return demarrer(modele, args.port, args.ordres, args.argent_reel,
+                    args.rejeu, args.stop_apres)
 
 
 if __name__ == "__main__":

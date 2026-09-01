@@ -194,6 +194,9 @@ class InferenceEngine:
         self._discordance_signalee: str = ""
         self._spread_normalise_signale = False
         self.n_requests = 0
+        # Distinct de n_requests, qui compte aussi les requetes refusees :
+        # « attendre une decision » doit attendre une VRAIE decision.
+        self.n_decisions = 0
         self.last_decision: Optional[PredictResponse] = None
 
         # Historique interne : deux composantes de l'état de portefeuille (volatilité de la
@@ -418,6 +421,7 @@ class InferenceEngine:
                 latency_ms=round((time.perf_counter() - t0) * 1000.0, 3),
             )
             self.last_decision = resp
+            self.n_decisions += 1
 
             # Chaque décision est journalisée côté serveur, pas seulement côté EA.
             # C'est la fenêtre du serveur que l'on garde ouverte pour surveiller le
@@ -523,6 +527,7 @@ class InferenceEngine:
             "account_type": self._account_seen or "unknown",
             "replay": self.replay,
             "requests_served": self.n_requests,
+            "decisions_served": self.n_decisions,
             "halted": self.guard.halted,
             "halt_reason": self.guard.halt_reason,
             "monitoring": self.monitor is not None,
