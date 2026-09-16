@@ -1,6 +1,12 @@
 name: Veille alternance
 
 on:
+  # Sur une branche de travail, on se contente des tests et du diagnostic :
+  # ni collecte, ni e-mail, ni ecriture dans le depot.
+  push:
+    paths:
+      - "veille-alternance/**"
+      - ".github/workflows/veille-alternance.yml"
   schedule:
     # 05h00 UTC = 07h00 a Paris en heure d'ete, 06h00 en heure d'hiver.
     - cron: "0 5 * * *"
@@ -47,7 +53,7 @@ jobs:
         run: python test_veille.py
 
       - name: Diagnostic des sources
-        if: inputs.mode == 'sonde'
+        if: github.event_name == 'push' || inputs.mode == 'sonde'
         working-directory: veille-alternance
         env:
           FT_CLIENT_ID: ${{ secrets.FT_CLIENT_ID }}
@@ -60,7 +66,7 @@ jobs:
         run: python veille.py --sonde
 
       - name: Collecte des offres
-        if: inputs.mode != 'sonde'
+        if: github.event_name != 'push' && inputs.mode != 'sonde'
         working-directory: veille-alternance
         env:
           FT_CLIENT_ID: ${{ secrets.FT_CLIENT_ID }}
@@ -78,12 +84,12 @@ jobs:
             ${{ inputs.mode == 'demo' && '--demo' || '--email' }}
 
       - name: Publier le digest dans le resume du run
-        if: always() && inputs.mode != 'sonde'
+        if: always() && github.event_name != 'push' && inputs.mode != 'sonde'
         working-directory: veille-alternance
         run: cat digest.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
 
       - name: Enregistrer le tableau de bord et l'historique
-        if: inputs.mode != 'sonde'
+        if: github.event_name != 'push' && inputs.mode != 'sonde'
         run: |
           git config user.name  "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
