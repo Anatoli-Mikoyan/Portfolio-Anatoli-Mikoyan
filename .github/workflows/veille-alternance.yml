@@ -1,0 +1,98 @@
+name: Veille alternance
+
+on:
+  schedule:
+    # 05h00 UTC = 07h00 a Paris en heure d'ete, 06h00 en heure d'hiver.
+    - cron: "0 5 * * *"
+  workflow_dispatch:
+    inputs:
+      mode:
+        description: "normal (collecte reelle) | sonde (diagnostic) | demo (jeu d'essai)"
+        type: choice
+        options: [normal, sonde, demo]
+        default: normal
+      jours:
+        description: "Fenetre de recence, en jours"
+        default: "7"
+      max:
+        description: "Nombre d'offres dans le digest"
+        default: "20"
+
+# Le job reecrit le tableau de bord et l'historique dans le depot.
+permissions:
+  contents: write
+
+concurrency:
+  group: veille-alternance
+  cancel-in-progress: false
+
+jobs:
+  veille:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+          cache-dependency-path: veille-alternance/requirements.txt
+
+      - name: Installer les dependances
+        working-directory: veille-alternance
+        run: pip install -r requirements.txt
+
+      - name: Tests hors ligne
+        working-directory: veille-alternance
+        run: python test_veille.py
+
+      - name: Diagnostic des sources
+        if: inputs.mode == 'sonde'
+        working-directory: veille-alternance
+        env:
+          FT_CLIENT_ID: ${{ secrets.FT_CLIENT_ID }}
+          FT_CLIENT_SECRET: ${{ secrets.FT_CLIENT_SECRET }}
+          LBA_API_KEY: ${{ secrets.LBA_API_KEY }}
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+        run: python veille.py --sonde
+
+      - name: Collecte des offres
+        if: inputs.mode != 'sonde'
+        working-directory: veille-alternance
+        env:
+          FT_CLIENT_ID: ${{ secrets.FT_CLIENT_ID }}
+          FT_CLIENT_SECRET: ${{ secrets.FT_CLIENT_SECRET }}
+          LBA_API_KEY: ${{ secrets.LBA_API_KEY }}
+          ADZUNA_APP_ID: ${{ secrets.ADZUNA_APP_ID }}
+          ADZUNA_APP_KEY: ${{ secrets.ADZUNA_APP_KEY }}
+          SMTP_HOST: ${{ secrets.SMTP_HOST }}
+          SMTP_USER: ${{ secrets.SMTP_USER }}
+          SMTP_PASS: ${{ secrets.SMTP_PASS }}
+        run: |
+          python veille.py \
+            --jours "${{ inputs.jours || 7 }}" \
+            --max "${{ inputs.max || 20 }}" \
+            ${{ inputs.mode == 'demo' && '--demo' || '--email' }}
+
+      - name: Publier le digest dans le resume du run
+        if: always() && inputs.mode != 'sonde'
+        working-directory: veille-alternance
+        run: cat digest.md >> "$GITHUB_STEP_SUMMARY" 2>/dev/null || true
+
+      - name: Enregistrer le tableau de bord et l'historique
+        if: inputs.mode != 'sonde'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add veille-alternance/index.html veille-alternance/digest.md veille-alternance/etat
+          if git diff --staged --quiet; then
+            echo "Aucun changement a enregistrer."
+          else
+            git commit -m "Veille alternance du $(date -u +%d/%m/%Y)"
+            # Le depot a pu bouger pendant le run : on rejoue par-dessus.
+            git pull --rebase --autostash origin "${GITHUB_REF_NAME}"
+            git push origin "HEAD:${GITHUB_REF_NAME}"
+          fi

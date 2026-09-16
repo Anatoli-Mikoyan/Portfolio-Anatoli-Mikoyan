@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<meta name="robots" content="noindex">
+<title>Veille alternance — Anatoli Mikoyan</title>
+<style>
+:root{--fond:#0e1020;--carte:#171a35;--carte2:#1d2143;--trait:#2c3160;
+--texte:#eef0ff;--doux:#a7afd8;--violet:#7c5cff;--cyan:#6fe3f5;--vert:#4ade9b;--orange:#ffb454;}
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:Inter,system-ui,-apple-system,"Segoe UI",sans-serif;background:var(--fond);
+color:var(--texte);line-height:1.5;padding:0 0 64px}
+.bandeau{background:linear-gradient(120deg,#171a35,#241a4d 48%,#10233d);padding:32px 16px 28px;
+border-bottom:1px solid var(--trait)}
+.dedans{max-width:940px;margin:0 auto}
+h1{font-size:1.65rem;letter-spacing:-.02em;margin-bottom:6px}
+h1 span{color:var(--cyan)}
+.sous{color:var(--doux);font-size:.92rem}
+.chiffres{display:flex;flex-wrap:wrap;gap:10px;margin-top:18px}
+.chiffre{background:rgba(124,92,255,.14);border:1px solid rgba(124,92,255,.34);
+border-radius:9px;padding:7px 13px;font-size:.84rem;color:#dfe3ff}
+.chiffre b{color:#fff}
+main{max-width:940px;margin:0 auto;padding:26px 16px 0}
+.offre{background:var(--carte);border:1px solid var(--trait);border-radius:13px;
+padding:17px 18px;margin-bottom:13px;transition:border-color .16s,transform .16s}
+.offre:hover{border-color:var(--violet);transform:translateY(-2px)}
+.haut{display:flex;justify-content:space-between;gap:14px;align-items:flex-start;flex-wrap:wrap}
+.titre{font-family:"Space Grotesk",Inter,sans-serif;font-size:1.06rem;font-weight:700;
+color:#fff;text-decoration:none}
+.titre:hover{color:var(--cyan)}
+.score{font-family:"JetBrains Mono",ui-monospace,monospace;font-size:.76rem;font-weight:600;
+padding:3px 9px;border-radius:999px;background:rgba(74,222,155,.15);
+border:1px solid rgba(74,222,155,.4);color:var(--vert);white-space:nowrap;flex:none}
+.score.moyen{background:rgba(255,180,84,.14);border-color:rgba(255,180,84,.4);color:var(--orange)}
+.meta{color:var(--doux);font-size:.85rem;margin:7px 0 9px;display:flex;flex-wrap:wrap;gap:5px 9px}
+.meta .frais{color:var(--vert);font-weight:600}
+.puce{font-size:.7rem;padding:2px 8px;border-radius:5px;font-weight:600;color:#fff}
+.raisons{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:9px}
+.raison{font-size:.73rem;padding:2px 8px;border-radius:5px;background:var(--carte2);
+border:1px solid var(--trait);color:#c3c9f2}
+.raison.negatif{background:rgba(255,99,99,.1);border-color:rgba(255,99,99,.32);color:#ffb0b0}
+.extrait{color:var(--doux);font-size:.87rem}
+.vide{text-align:center;padding:54px 20px;color:var(--doux)}
+.avertissement{background:rgba(255,180,84,.13);border:1px solid rgba(255,180,84,.42);
+color:#ffd9a0;border-radius:9px;padding:11px 14px;margin-bottom:16px;font-size:.87rem}
+footer{max-width:940px;margin:30px auto 0;padding:0 16px;color:#6d739a;font-size:.78rem}
+a.lien{color:var(--cyan)}
+@media(max-width:560px){.haut{flex-direction:column}h1{font-size:1.32rem}}
+</style>
+</head>
+<body>
+<header class="bandeau"><div class="dedans">
+  <h1>Veille <span>alternance</span></h1>
+  <p class="sous">Developpeur IA / Python / Data — rentree octobre 2026 · mise a jour du 16/09/2026 a 16h09</p>
+  <div class="chiffres"><div class="chiffre"><b>5</b> nouvelles offres</div><div class="chiffre"><b>8</b> annonces analysees</div><div class="chiffre"><b>1</b> sources actives</div><div class="chiffre"><b>0</b> deja vues, filtrees</div></div>
+</div></header>
+<main><div class="avertissement"><b>Jeu de demonstration.</b> Ces annonces sont fictives et servent uniquement a illustrer le rendu. Les vraies offres apparaitront apres la configuration des cles d'API (voir le README).</div><article class="offre">
+  <div class="haut">
+    <a class="titre" href="https://example.org/1" target="_blank" rel="noopener">Alternance - Développeur IA / Python (H/F)</a>
+    <span class="score">128 pts</span>
+  </div>
+  <div class="meta"><span>Doctolib</span><span>Paris (75)</span><span class="frais">il y a 6 h</span><span class="puce" style="background:#2f6fed">France Travail</span></div>
+  <div class="raisons"><span class="raison">poste vise : developpeur ia</span><span class="raison">coeur : python, ia, llm</span><span class="raison">solides : postgresql, fastapi, docker</span><span class="raison">rentree 2026 mentionnee</span><span class="raison">Ile-de-France (75)</span></div>
+  <p class="extrait">Vous rejoignez l&#x27;équipe Data pour développer des services Python autour de nos modèles LLM. Stack : Python, FastAPI, PostgreSQL, Docker. Rentrée octobre 2026. Télétravail 2 jours par semaine.</p>
+</article><article class="offre">
+  <div class="haut">
+    <a class="titre" href="https://example.org/2" target="_blank" rel="noopener">Alternant Data Engineer</a>
+    <span class="score">92 pts</span>
+  </div>
+  <div class="meta"><span>Decathlon</span><span>Lille (59)</span><span class="frais">hier</span><span class="puce" style="background:#2f6fed">France Travail</span></div>
+  <div class="raisons"><span class="raison">poste vise : data engineer</span><span class="raison">coeur : python</span><span class="raison">solides : sql, data, airflow</span><span class="raison">rentree 2026 mentionnee</span></div>
+  <p class="extrait">Construction de pipelines de données, SQL, Airflow, Python, dbt. Contrat d&#x27;apprentissage 12 mois à partir de septembre 2026.</p>
+</article><article class="offre">
+  <div class="haut">
+    <a class="titre" href="https://example.org/6" target="_blank" rel="noopener">Développeur back-end Python en alternance</a>
+    <span class="score">89 pts</span>
+  </div>
+  <div class="meta"><span>OVHcloud</span><span>Roubaix (59)</span><span class="">il y a 2 jours</span><span class="puce" style="background:#2f6fed">France Travail</span></div>
+  <div class="raisons"><span class="raison">poste vise : developpeur back-end python</span><span class="raison">coeur : python</span><span class="raison">solides : postgresql, api rest, docker</span><span class="raison">annexes : kubernetes</span><span class="raison">rentree 2026 mentionnee</span></div>
+  <p class="extrait">API REST Python, Docker, Kubernetes, PostgreSQL. Contrat de professionnalisation, rentrée 2026.</p>
+</article><article class="offre">
+  <div class="haut">
+    <a class="titre" href="https://example.org/4" target="_blank" rel="noopener">Alternance Machine Learning Engineer - Master 2</a>
+    <span class="score">86 pts</span>
+  </div>
+  <div class="meta"><span>Thales</span><span>Palaiseau (91)</span><span class="frais">il y a 20 h</span><span class="puce" style="background:#8b5cf6">Adzuna</span></div>
+  <div class="raisons"><span class="raison">poste vise : machine learning engineer</span><span class="raison">coeur : machine learning, deep learning, pytorch</span><span class="raison">Ile-de-France (91)</span><span class="raison negatif">niveau demande superieur a BAC+3 (bac+5)</span></div>
+  <p class="extrait">Profil recherché : étudiant en dernière année d&#x27;école d&#x27;ingénieur, niveau Bac+5. PyTorch, deep learning.</p>
+</article><article class="offre">
+  <div class="haut">
+    <a class="titre" href="https://example.org/3" target="_blank" rel="noopener">Alternance Développeur IA &amp; Automatisation (F/H)</a>
+    <span class="score moyen">34 pts</span>
+  </div>
+  <div class="meta"><span>ISCOD</span><span>Saclay (91)</span><span class="frais">il y a 10 h</span><span class="puce" style="background:#8b5cf6">Adzuna</span></div>
+  <div class="raisons"><span class="raison">poste vise : developpeur ia</span><span class="raison">coeur : ia</span><span class="raison">Ile-de-France (91)</span><span class="raison negatif">organisme de formation, pas un employeur (iscod)</span></div>
+  <p class="extrait">L&#x27;ISCOD, école supérieure en alternance, recrute pour son entreprise partenaire. Formation Bachelor incluse.</p>
+</article></main>
+<footer>
+  <p>Genere automatiquement chaque matin par
+  <a class="lien" href="https://github.com/Anatoli-Mikoyan/Portfolio-Anatoli-Mikoyan/tree/main/veille-alternance">veille-alternance</a>
+  — classement etabli a partir du CV et du projet de formation.</p>
+</footer>
+</body>
+</html>

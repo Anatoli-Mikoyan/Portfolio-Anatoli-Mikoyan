@@ -1,0 +1,142 @@
+{
+  "_commentaire": "Profil extrait du CV (cv/cv.html). C'est le SEUL fichier a editer pour ajuster la veille.",
+
+  "identite": {
+    "nom": "Anatoli Mikoyan",
+    "email": "anatoli.mikoyan95@gmail.com",
+    "ville": "Cormeilles-en-Parisis",
+    "code_postal": "95240",
+    "code_insee": "95183",
+    "latitude": 48.9752,
+    "longitude": 2.1969,
+    "vehicule": true
+  },
+
+  "formation": {
+    "intitule": "Bachelor Intelligence Artificielle - 3e annee",
+    "ecole": "ETNA",
+    "lieu_ecole": "Ivry-sur-Seine (94)",
+    "niveau_rncp": 6,
+    "niveau_diplome": "BAC+3",
+    "rentree": "2026-10-05",
+    "rythme": "En entreprise tous les jours sauf un vendredi toutes les 3 semaines"
+  },
+
+  "recherche": {
+    "types_contrat": ["apprentissage", "professionnalisation"],
+    "duree_mois": 12,
+    "debut_souhaite": "2026-10-01",
+    "disponible_des": "2026-09-01",
+    "jours_recence_max": 7,
+    "nb_offres_digest": 20
+  },
+
+  "metiers_vises": [
+    "developpeur ia",
+    "ingenieur ia",
+    "ai engineer",
+    "ai developer",
+    "developpeur python",
+    "python developer",
+    "machine learning engineer",
+    "ingenieur machine learning",
+    "mlops",
+    "data engineer",
+    "data analyst",
+    "data scientist",
+    "ingenieur data",
+    "developpeur back-end python",
+    "developpeur backend",
+    "ingenieur logiciel",
+    "software engineer",
+    "developpeur full-stack",
+    "developpeur fullstack",
+    "llm engineer",
+    "prompt engineer",
+    "nlp"
+  ],
+
+  "competences": {
+    "coeur": {
+      "poids": 12,
+      "termes": ["python", "intelligence artificielle", "ia", "machine learning", "deep learning",
+                 "llm", "genai", "ia generative", "generative ai", "nlp", "rag", "data science",
+                 "pytorch", "tensorflow", "scikit-learn", "pandas", "numpy", "langchain", "openai",
+                 "mistral", "hugging face", "huggingface", "prompt engineering", "mlops"]
+    },
+    "solides": {
+      "poids": 6,
+      "termes": ["sql", "postgresql", "mysql", "api rest", "fastapi", "flask", "django",
+                 "docker", "linux", "git*", "data*", "etl", "airflow", "dbt", "power bi",
+                 "java", "spring boot", "typescript", "react", "reactjs", "javascript"]
+    },
+    "annexes": {
+      "poids": 2,
+      "termes": ["html", "css", "php", "kubernetes", "aws", "azure", "gcp", "cloud",
+                 "ci/cd", "agile", "scrum", "webservice", "microservices"]
+    }
+  },
+
+  "mots_cles_recherche": [
+    "alternance developpeur python",
+    "alternance intelligence artificielle",
+    "alternance data",
+    "alternance machine learning",
+    "alternance developpeur back-end",
+    "alternance data engineer",
+    "alternance data analyst",
+    "apprentissage developpeur python",
+    "alternance ia generative llm",
+    "alternance software engineer"
+  ],
+
+  "codes_rome": ["M1805", "M1802", "M1810", "M1806", "M1403"],
+
+  "geographie": {
+    "_commentaire": "France entiere : l'ecole n'impose qu'un vendredi toutes les 3 semaines a Ivry (94).",
+    "france_entiere": true,
+    "rayon_km_autour_domicile": 60,
+    "departements_prioritaires": ["75", "92", "93", "94", "95", "91", "77", "78"],
+    "bonus_prioritaire": 10,
+    "bonus_teletravail": 6,
+    "villes_bonus": ["paris", "lille", "lyon", "nantes", "bordeaux", "toulouse",
+                     "rennes", "marseille", "lens", "roubaix", "villeneuve-d'ascq"]
+  },
+
+  "exclusions": {
+    "_commentaire": "malus = on degrade le score. rejet = on jette l'offre.",
+    "rejet_titre": ["stage uniquement", "cdi uniquement"],
+    "malus_metier": {
+      "poids": -25,
+      "termes": ["commercial", "business developer", "vente", "telepro*", "teleconseil*",
+                 "ressources humaines", "chef de projet marketing", "community manager",
+                 "comptab*", "juridique", "assistant administratif", "logistique",
+                 "technicien de maintenance", "cybersecurite soc", "graphiste", "ux designer"]
+    },
+    "malus_organisme_formation": {
+      "_commentaire": "Ecoles/CFA qui publient des annonces pour vendre leur formation, pas de vrais employeurs.",
+      "poids": -40,
+      "termes": ["iscod", "dawan", "studi", "openclassrooms", "walt", "cfa",
+                 "ecole*", "campus academy", "isefac", "digital campus", "ifocop",
+                 "alternance conseil", "groupe alternance", "talis", "eduservices",
+                 "mbway", "ipac", "sup'*", "formation en alternance bac"]
+    },
+    "malus_niveau": {
+      "_commentaire": "Il entre en BAC+3, pas en M2.",
+      "poids": -12,
+      "termes": ["bac+5", "bac +5", "master 2", "m2", "niveau ingenieur bac+5",
+                 "derniere annee d'ecole d'ingenieur", "phd", "doctorat"]
+    }
+  },
+
+  "bonus": {
+    "alternance_dans_titre": 8,
+    "rentree_2026": 6,
+    "offre_moins_48h": 14,
+    "offre_moins_72h": 9,
+    "offre_moins_7j": 4,
+    "termes_rentree": ["septembre 2026", "octobre 2026", "rentree 2026", "2026/2027", "2026-2027"]
+  },
+
+  "seuil_score_minimum": 18
+}

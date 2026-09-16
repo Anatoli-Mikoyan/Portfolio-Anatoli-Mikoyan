@@ -1,0 +1,138 @@
+{
+  "statistiques": {
+    "total_collecte": 8,
+    "sources_actives": 1,
+    "deja_vues": 0,
+    "pertinentes": 5,
+    "detail_sources": [
+      "demo : jeu d'essai"
+    ],
+    "genere_le": "2026-09-16T14:09:57.228910+00:00",
+    "demo": true
+  },
+  "offres": [
+    {
+      "source": "France Travail",
+      "titre": "Alternance - Développeur IA / Python (H/F)",
+      "entreprise": "Doctolib",
+      "lieu": "Paris (75)",
+      "departement": "",
+      "contrat": "E2",
+      "date_publication": "2026-09-16T08:09:57.217962+00:00",
+      "url": "https://example.org/1",
+      "description": "Vous rejoignez l'équipe Data pour développer des services Python autour de nos modèles LLM. Stack : Python, FastAPI, PostgreSQL, Docker. Rentrée octobre 2026. Télétravail 2 jours par semaine.",
+      "salaire": "",
+      "teletravail": true,
+      "identifiant_source": "1",
+      "score": 128,
+      "raisons": [
+        "poste vise : developpeur ia",
+        "coeur : python, ia, llm",
+        "solides : postgresql, fastapi, docker",
+        "rentree 2026 mentionnee",
+        "Ile-de-France (75)",
+        "teletravail possible"
+      ],
+      "autres_sources": [],
+      "cle": "56475922919b3171",
+      "age_texte": "il y a 6 h"
+    },
+    {
+      "source": "France Travail",
+      "titre": "Alternant Data Engineer",
+      "entreprise": "Decathlon",
+      "lieu": "Lille (59)",
+      "departement": "",
+      "contrat": "E2",
+      "date_publication": "2026-09-15T08:09:57.217993+00:00",
+      "url": "https://example.org/2",
+      "description": "Construction de pipelines de données, SQL, Airflow, Python, dbt. Contrat d'apprentissage 12 mois à partir de septembre 2026.",
+      "salaire": "",
+      "teletravail": false,
+      "identifiant_source": "2",
+      "score": 92,
+      "raisons": [
+        "poste vise : data engineer",
+        "coeur : python",
+        "solides : sql, data, airflow",
+        "rentree 2026 mentionnee"
+      ],
+      "autres_sources": [],
+      "cle": "5934ba68f65513e4",
+      "age_texte": "hier"
+    },
+    {
+      "source": "France Travail",
+      "titre": "Développeur back-end Python en alternance",
+      "entreprise": "OVHcloud",
+      "lieu": "Roubaix (59)",
+      "departement": "",
+      "contrat": "FS",
+      "date_publication": "2026-09-14T02:09:57.218008+00:00",
+      "url": "https://example.org/6",
+      "description": "API REST Python, Docker, Kubernetes, PostgreSQL. Contrat de professionnalisation, rentrée 2026.",
+      "salaire": "",
+      "teletravail": false,
+      "identifiant_source": "6",
+      "score": 89,
+      "raisons": [
+        "poste vise : developpeur back-end python",
+        "coeur : python",
+        "solides : postgresql, api rest, docker",
+        "annexes : kubernetes",
+        "rentree 2026 mentionnee"
+      ],
+      "autres_sources": [],
+      "cle": "bec4cb40ef18e8c9",
+      "age_texte": "il y a 2 jours"
+    },
+    {
+      "source": "Adzuna",
+      "titre": "Alternance Machine Learning Engineer - Master 2",
+      "entreprise": "Thales",
+      "lieu": "Palaiseau (91)",
+      "departement": "",
+      "contrat": "apprentissage",
+      "date_publication": "2026-09-15T18:09:57.218002+00:00",
+      "url": "https://example.org/4",
+      "description": "Profil recherché : étudiant en dernière année d'école d'ingénieur, niveau Bac+5. PyTorch, deep learning.",
+      "salaire": "",
+      "teletravail": false,
+      "identifiant_source": "4",
+      "score": 86,
+      "raisons": [
+        "poste vise : machine learning engineer",
+        "coeur : machine learning, deep learning, pytorch",
+        "Ile-de-France (91)",
+        "- niveau demande superieur a BAC+3 (bac+5)"
+      ],
+      "autres_sources": [],
+      "cle": "987f4c5ac1a62b93",
+      "age_texte": "il y a 20 h"
+    },
+    {
+      "source": "Adzuna",
+      "titre": "Alternance Développeur IA & Automatisation (F/H)",
+      "entreprise": "ISCOD",
+      "lieu": "Saclay (91)",
+      "departement": "",
+      "contrat": "apprentissage",
+      "date_publication": "2026-09-16T04:09:57.217998+00:00",
+      "url": "https://example.org/3",
+      "description": "L'ISCOD, école supérieure en alternance, recrute pour son entreprise partenaire. Formation Bachelor incluse.",
+      "salaire": "",
+      "teletravail": false,
+      "identifiant_source": "3",
+      "score": 34,
+      "raisons": [
+        "poste vise : developpeur ia",
+        "coeur : ia",
+        "Ile-de-France (91)",
+        "- organisme de formation, pas un employeur (iscod)"
+      ],
+      "autres_sources": [],
+      "cle": "95cc4879ad1a5162",
+      "age_texte": "il y a 10 h"
+    }
+  ]
+}
