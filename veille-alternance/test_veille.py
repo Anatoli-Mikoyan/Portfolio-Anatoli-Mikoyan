@@ -100,6 +100,16 @@ class TestScoring(unittest.TestCase):
         self.assertLess(iscod.score, doctolib.score)
         self.assertTrue(any("organisme de formation" in r for r in iscod.raisons))
 
+    def test_etoile_libere_une_borne(self):
+        """`comptab*` doit attraper comptabilite, `*school` doit attraper Kaischool,
+        sans que `school` seul ne matche a l'interieur d'un autre mot."""
+        from scoring import _compte_termes
+
+        self.assertEqual(_compte_termes("poste en comptabilite", ["comptab*"]), ["comptab"])
+        self.assertEqual(_compte_termes("recrute chez kaischool", ["*school"]), ["school"])
+        self.assertEqual(_compte_termes("recrute chez kaischool", ["school"]), [])
+        self.assertEqual(_compte_termes("charge commercial", ["ia"]), [])
+
     def test_malus_bac5(self):
         thales = scorer(self.par_entreprise["Thales"], self.profil)
         self.assertTrue(any("BAC+3" in r or "superieur" in r for r in thales.raisons))

@@ -37,21 +37,24 @@ def _motif(terme: str) -> re.Pattern[str]:
     """Compile un terme en motif borne par des limites de mots.
 
     Sans ces bornes, "ia" matche "commerc-ia-l" et "git" matche "di-git-al" :
-    le score se retrouve pollue par des offres hors sujet. Un terme suffixe
-    par `*` reste un prefixe volontaire ("comptab*" -> comptable, comptabilite).
+    le score se retrouve pollue par des offres hors sujet. Une etoile libere
+    volontairement une borne : "comptab*" attrape comptable et comptabilite,
+    "*school" attrape Kaischool et Webschool.
     """
     terme = terme.strip()
-    prefixe = terme.endswith("*")
-    noyau = re.escape(terme[:-1].strip() if prefixe else terme)
-    borne_droite = "" if prefixe else r"(?![a-z0-9])"
-    return re.compile(rf"(?<![a-z0-9]){noyau}{borne_droite}")
+    suffixe_libre = terme.startswith("*")
+    prefixe_libre = terme.endswith("*")
+    noyau = re.escape(terme.strip("*").strip())
+    borne_gauche = "" if suffixe_libre else r"(?<![a-z0-9])"
+    borne_droite = "" if prefixe_libre else r"(?![a-z0-9])"
+    return re.compile(rf"{borne_gauche}{noyau}{borne_droite}")
 
 
 def _compte_termes(texte: str, termes: list[str]) -> list[str]:
     """Renvoie les termes de la liste reellement presents dans le texte."""
     trouves = []
     for terme in termes:
-        propre = terme.strip().rstrip("*").strip()
+        propre = terme.strip().strip("*").strip()
         if propre and _motif(terme).search(texte):
             trouves.append(propre)
     return trouves

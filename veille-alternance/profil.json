@@ -119,7 +119,9 @@
       "termes": ["iscod", "dawan", "studi", "openclassrooms", "walt", "cfa",
                  "ecole*", "campus academy", "isefac", "digital campus", "ifocop",
                  "alternance conseil", "groupe alternance", "talis", "eduservices",
-                 "mbway", "ipac", "sup'*", "formation en alternance bac"]
+                 "mbway", "ipac", "sup'*", "formation en alternance bac",
+                 "*school", "*academy", "institut f2i", "galileo global education",
+                 "kiwi", "lead&connect", "esiee", "epitech", "ynov", "wild code"]
     },
     "malus_niveau": {
       "_commentaire": "Il entre en BAC+3, pas en M2.",
