@@ -10,10 +10,12 @@ import argparse
 import csv
 import mimetypes
 import os
+import re
 import smtplib
 import ssl
 import sys
 import time
+import unicodedata
 from datetime import datetime
 from email.message import EmailMessage
 from email.utils import formataddr
@@ -61,18 +63,30 @@ def journaliser(entreprise, email, statut):
         w.writerow([datetime.now().isoformat(timespec="seconds"), entreprise, email, statut])
 
 
+def slug(nom):
+    nom = unicodedata.normalize("NFKD", nom).encode("ascii", "ignore").decode()
+    return re.sub(r"[^a-z0-9]+", "-", nom.lower()).strip("-")
+
+
 def rediger(modele, ligne):
+    """Renvoie (objet, corps, source) ; corps vaut None si la lettre n'est pas personnalisée."""
+    perso = DOSSIER / "lettres" / f"{slug(ligne['entreprise'])}.txt"
+    if perso.exists():
+        texte, source = perso.read_text(encoding="utf-8"), perso.name
+    elif ligne.get("accroche"):
+        texte, source = modele, "lettre.txt + accroche"
+    else:
+        return None, None, f"aucune lettre : crée lettres/{perso.name} ou remplis la colonne accroche"
     contact = ligne.get("contact", "")
-    valeurs = {
-        "entreprise": ligne["entreprise"],
-        "salutation": contact or "Madame, Monsieur",
-        "salutation_fin": contact or "Madame, Monsieur",
-    }
-    texte = modele.format(**valeurs)
+    texte = texte.format(
+        entreprise=ligne["entreprise"],
+        salutation=f"Bonjour {contact}," if contact else "Bonjour,",
+        accroche=ligne.get("accroche", ""),
+    )
     premiere, _, corps = texte.partition("\n")
     if premiere.lower().startswith("objet"):
-        return premiere.split(":", 1)[1].strip(), corps.strip()
-    return f"Candidature – {ligne['entreprise']}", texte.strip()
+        return premiere.split(":", 1)[1].strip(), corps.strip(), source
+    return f"Candidature alternance chez {ligne['entreprise']}", texte.strip(), source
 
 
 def construire_mail(expediteur, nom, destinataire, objet, corps, cv):
@@ -94,6 +108,8 @@ def main():
     p.add_argument("--cv", default=DOSSIER.parent / "Cv.pdf", type=Path)
     p.add_argument("--delai", default=45, type=int, help="secondes entre deux envois (défaut 45)")
     p.add_argument("--max", default=0, type=int, help="nombre max d'envois cette fois (0 = tous)")
+    p.add_argument("--a-partir", metavar="'AAAA-MM-JJ HH:MM'",
+                   help="attend cette heure avant d'envoyer (l'ordinateur doit rester allumé)")
     groupe = p.add_mutually_exclusive_group()
     groupe.add_argument("--envoyer", action="store_true", help="envoie réellement les mails")
     groupe.add_argument("--test", metavar="EMAIL", help="envoie le 1er mail à cette adresse, pour vérifier")
@@ -115,8 +131,11 @@ def main():
 
     if not (args.envoyer or args.test):
         for e in a_faire:
-            objet, corps = rediger(modele, e)
-            print(f"=== À : {e['email']}\nObjet : {objet}\n\n{corps}\n[PJ : {args.cv.name}]\n")
+            objet, corps, source = rediger(modele, e)
+            if corps is None:
+                print(f"=== ⚠ {e['entreprise']} ({e['email']}) : {source}\n")
+                continue
+            print(f"=== À : {e['email']}   [{source}]\nObjet : {objet}\n\n{corps}\n[PJ : {args.cv.name}]\n")
         print("Aperçu seulement. Ajoute --test ton@mail.fr pour un essai, puis --envoyer.")
         return
 
@@ -133,10 +152,20 @@ def main():
         if not a_faire:
             sys.exit("Aucune entreprise à utiliser pour le test.")
 
+    if args.a_partir:
+        cible = datetime.strptime(args.a_partir, "%Y-%m-%d %H:%M")
+        attente = (cible - datetime.now()).total_seconds()
+        if attente > 0:
+            print(f"Envoi programmé le {cible:%d/%m à %H:%M}. Laisse l'ordinateur allumé et connecté.")
+            time.sleep(attente)
+
     with smtplib.SMTP_SSL(serveur, port, context=ssl.create_default_context()) as smtp:
         smtp.login(expediteur, mot_de_passe)
         for i, e in enumerate(a_faire):
-            objet, corps = rediger(modele, e)
+            objet, corps, source = rediger(modele, e)
+            if corps is None:
+                print(f"⏭ {e['entreprise']} ignorée : {source}")
+                continue
             destinataire = args.test or e["email"]
             try:
                 smtp.send_message(construire_mail(expediteur, nom, destinataire, objet, corps, args.cv))

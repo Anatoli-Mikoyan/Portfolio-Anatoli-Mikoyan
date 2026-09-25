@@ -6,9 +6,15 @@ personnalisée (nom de l'entreprise, et nom du contact si connu) avec le CV en p
 ## 1. Préparer les fichiers
 
 - **`entreprises.csv`** : copie `entreprises.exemple.csv`. Colonnes : `entreprise`, `email`,
-  et `contact` (facultatif, ex. « Madame Dupont »). Séparateur `,` ou `;` (export Excel accepté).
-- **`lettre.txt`** : ta lettre. `{entreprise}` est remplacé par le nom de l'entreprise,
-  `{salutation}` par le contact ou « Madame, Monsieur ». La 1re ligne `Objet : ...` devient l'objet du mail.
+  `contact` (facultatif, ex. « Madame Dupont ») et `accroche` (une phrase propre à l'entreprise).
+  Séparateur `,` ou `;` (export Excel accepté).
+- **La lettre**, écrite directement dans le corps du mail (pas de PDF), est choisie ainsi :
+  1. `lettres/<nom-entreprise>.txt` s'il existe (lettre entièrement écrite pour cette entreprise) ;
+  2. sinon `lettre.txt`, où `{accroche}` reçoit la phrase de la colonne `accroche` ;
+  3. sinon l'entreprise est **ignorée** : aucune lettre générique ne part.
+
+  `{entreprise}` est remplacé par le nom, `{salutation}` par « Bonjour Madame X, » ou « Bonjour, ».
+  La 1re ligne `Objet : ...` devient l'objet du mail.
 - **CV** : par défaut `../Cv.pdf` (sinon `--cv chemin/vers/cv.pdf`).
 - **`.env`** : copie `.env.exemple` et mets ton adresse + mot de passe.
   Pour Gmail, active la validation en 2 étapes puis crée un
@@ -23,7 +29,10 @@ personnalisée (nom de l'entreprise, et nom du contact si connu) avec le CV en p
 python3 envoyer_candidatures.py                        # aperçu de tous les mails, rien n'est envoyé
 python3 envoyer_candidatures.py --test ton@mail.fr     # 1 mail d'essai envoyé à toi-même
 python3 envoyer_candidatures.py --envoyer --max 20     # envoi réel, 20 entreprises max
+python3 envoyer_candidatures.py --envoyer --a-partir "2026-09-28 08:30"   # envoi programmé
 ```
+
+Avec `--a-partir`, le script attend l'heure choisie : l'ordinateur doit rester allumé et connecté.
 
 - 45 s d'attente entre chaque mail (`--delai`) pour ne pas être classé en spam.
 - Chaque envoi est noté dans `envois.log.csv` : relancer le script ne renvoie jamais

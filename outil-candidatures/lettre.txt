@@ -1,13 +1,17 @@
-Objet : Candidature en alternance – Développeur IA / Python – {entreprise}
+Objet : Candidature alternance développeur IA Python | Anatoli Mikoyan
+{salutation}
 
-{salutation},
+{accroche}
 
-Actuellement à la recherche d'une alternance dans le domaine de l'intelligence artificielle et du développement Python, je me permets de vous adresser ma candidature chez {entreprise}.
+Je m'appelle Anatoli Mikoyan. Après un BTS SIO, j'entre en 3e année de Bachelor informatique spécialisé en intelligence artificielle. Je cherche une alternance de 12 à 24 mois en Île-de-France et je suis disponible dès maintenant.
 
-Passionné par la data et l'automatisation, j'ai développé plusieurs projets en Python que vous pouvez retrouver sur mon portfolio. Rejoindre {entreprise} serait pour moi l'occasion de mettre ces compétences au service de vos équipes tout en continuant à progresser à vos côtés.
+Cette année, j'ai construit seul TradeVIQ, un SaaS aujourd'hui en production. J'y ai branché un LLM qui repère les mauvaises habitudes des utilisateurs dans leurs données et leur envoie un rapport chaque semaine. J'ai aussi écrit le service Python qui récupère puis nettoie les données de trois API de brokers. Mettre un service en ligne, je sais donc déjà le faire. Ce que je viens chercher chez {entreprise}, c'est apprendre à le faire à plus grande échelle, au sein d'une vraie équipe.
 
-Vous trouverez mon CV en pièce jointe. Je serais ravi d'échanger avec vous lors d'un entretien.
+Mon CV est en pièce jointe. Vous pouvez aussi voir mes projets ici : https://anatoli-mikoyan.github.io/Portfolio-Anatoli-Mikoyan/
 
-Je vous prie d'agréer, {salutation_fin}, l'expression de mes salutations distinguées.
+Auriez-vous un moment pour en parler, cette semaine ou la suivante ? Je peux passer vous voir ou vous appeler, comme vous préférez.
+
+Bien à vous,
 
 Anatoli Mikoyan
+07 83 15 17 86
