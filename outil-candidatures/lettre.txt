@@ -1,0 +1,13 @@
+Objet : Candidature en alternance – Développeur IA / Python – {entreprise}
+
+{salutation},
+
+Actuellement à la recherche d'une alternance dans le domaine de l'intelligence artificielle et du développement Python, je me permets de vous adresser ma candidature chez {entreprise}.
+
+Passionné par la data et l'automatisation, j'ai développé plusieurs projets en Python que vous pouvez retrouver sur mon portfolio. Rejoindre {entreprise} serait pour moi l'occasion de mettre ces compétences au service de vos équipes tout en continuant à progresser à vos côtés.
+
+Vous trouverez mon CV en pièce jointe. Je serais ravi d'échanger avec vous lors d'un entretien.
+
+Je vous prie d'agréer, {salutation_fin}, l'expression de mes salutations distinguées.
+
+Anatoli Mikoyan
