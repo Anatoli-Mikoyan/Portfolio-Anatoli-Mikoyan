@@ -7,7 +7,7 @@ personnalisée (nom de l'entreprise, et nom du contact si connu) avec le CV en p
 
 - **`entreprises.csv`** : copie `entreprises.exemple.csv`. Colonnes : `entreprise`, `email`,
   `contact` (facultatif, ex. « Madame Dupont ») et `accroche` (une phrase propre à l'entreprise).
-  Séparateur `,` ou `;` (export Excel accepté).
+  Séparateur `,` ou `;` (export Excel accepté). Une colonne `envoyer` à `non` met une entreprise de côté.
 - **La lettre**, écrite directement dans le corps du mail (pas de PDF), est choisie ainsi :
   1. `lettres/<nom-entreprise>.txt` s'il existe (lettre entièrement écrite pour cette entreprise) ;
   2. sinon `lettre.txt`, où `{accroche}` reçoit la phrase de la colonne `accroche` ;
@@ -15,7 +15,7 @@ personnalisée (nom de l'entreprise, et nom du contact si connu) avec le CV en p
 
   `{entreprise}` est remplacé par le nom, `{salutation}` par « Bonjour Madame X, » ou « Bonjour, ».
   La 1re ligne `Objet : ...` devient l'objet du mail.
-- **CV** : par défaut `../Cv.pdf` (sinon `--cv chemin/vers/cv.pdf`).
+- **CV** : `CV_Anatoli_Mikoyan_alternance.pdf` s'il est dans ce dossier, sinon `../Cv.pdf` (ou `--cv chemin/vers/cv.pdf`).
 - **`.env`** : copie `.env.exemple` et mets ton adresse + mot de passe.
   Pour Gmail, active la validation en 2 étapes puis crée un
   [mot de passe d'application](https://myaccount.google.com/apppasswords).

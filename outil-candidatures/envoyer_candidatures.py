@@ -44,7 +44,10 @@ def lire_entreprises(chemin):
             {k.strip().lower(): (v or "").strip() for k, v in ligne.items() if k}
             for ligne in csv.DictReader(f, dialect=dialecte)
         ]
-    return [l for l in lignes if l.get("entreprise") and l.get("email")]
+    return [
+        l for l in lignes
+        if l.get("entreprise") and l.get("email") and l.get("envoyer", "oui").lower() != "non"
+    ]
 
 
 def deja_envoyes():
@@ -105,7 +108,8 @@ def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--csv", default=DOSSIER / "entreprises.csv", type=Path)
     p.add_argument("--lettre", default=DOSSIER / "lettre.txt", type=Path)
-    p.add_argument("--cv", default=DOSSIER.parent / "Cv.pdf", type=Path)
+    cv_defaut = DOSSIER / "CV_Anatoli_Mikoyan_alternance.pdf"
+    p.add_argument("--cv", default=cv_defaut if cv_defaut.exists() else DOSSIER.parent / "Cv.pdf", type=Path)
     p.add_argument("--delai", default=45, type=int, help="secondes entre deux envois (défaut 45)")
     p.add_argument("--max", default=0, type=int, help="nombre max d'envois cette fois (0 = tous)")
     p.add_argument("--a-partir", metavar="'AAAA-MM-JJ HH:MM'",
