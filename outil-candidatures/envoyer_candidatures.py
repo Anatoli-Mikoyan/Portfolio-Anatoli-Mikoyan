@@ -83,7 +83,8 @@ def rediger(modele, ligne):
     contact = ligne.get("contact", "")
     texte = texte.format(
         entreprise=ligne["entreprise"],
-        salutation=f"Bonjour {contact}," if contact else "Bonjour,",
+        salutation=f"{contact or 'Madame, Monsieur'},",
+        civilite=contact or "Madame, Monsieur",
         accroche=ligne.get("accroche", ""),
     )
     premiere, _, corps = texte.partition("\n")
