@@ -167,26 +167,38 @@ def main():
             print(f"Envoi programmé le {cible:%d/%m à %H:%M}. Laisse l'ordinateur allumé et connecté.")
             time.sleep(attente)
 
-    with smtplib.SMTP_SSL(serveur, port, context=ssl.create_default_context()) as smtp:
-        smtp.login(expediteur, mot_de_passe)
-        for i, e in enumerate(a_faire):
-            objet, corps, source = rediger(modele, e)
-            if corps is None:
-                print(f"⏭ {e['entreprise']} ignorée : {source}")
-                continue
-            destinataire = args.test or e["email"]
+    def envoyer_un(msg):
+        # Une connexion par mail : Gmail coupe les connexions restées inactives pendant les pauses.
+        for tentative in (1, 2):
             try:
-                smtp.send_message(construire_mail(expediteur, nom, destinataire, objet, corps, args.cv))
-                print(f"✔ {e['entreprise']} → {destinataire}")
-                if not args.test:
-                    journaliser(e["entreprise"], e["email"], "envoyé")
-            except smtplib.SMTPException as err:
-                print(f"✘ {e['entreprise']} → {destinataire} : {err}")
-                if not args.test:
-                    journaliser(e["entreprise"], e["email"], f"erreur: {err}")
-            if i < len(a_faire) - 1:
-                time.sleep(args.delai)
+                with smtplib.SMTP_SSL(serveur, port, context=ssl.create_default_context(), timeout=60) as smtp:
+                    smtp.login(expediteur, mot_de_passe)
+                    smtp.send_message(msg)
+                return
+            except smtplib.SMTPAuthenticationError:
+                sys.exit("Gmail refuse la connexion : vérifie EXPEDITEUR et MOT_DE_PASSE dans .env")
+            except (smtplib.SMTPException, OSError):
+                if tentative == 2:
+                    raise
+                time.sleep(10)
 
+    for i, e in enumerate(a_faire):
+        objet, corps, source = rediger(modele, e)
+        if corps is None:
+            print(f"⏭ {e['entreprise']} ignorée : {source}")
+            continue
+        destinataire = args.test or e["email"]
+        try:
+            envoyer_un(construire_mail(expediteur, nom, destinataire, objet, corps, args.cv))
+            print(f"✔ {e['entreprise']} → {destinataire}")
+            if not args.test:
+                journaliser(e["entreprise"], e["email"], "envoyé")
+        except (smtplib.SMTPException, OSError) as err:
+            print(f"✘ {e['entreprise']} → {destinataire} : {err}")
+            if not args.test:
+                journaliser(e["entreprise"], e["email"], f"erreur: {err}")
+        if i < len(a_faire) - 1:
+            time.sleep(args.delai)
 
 if __name__ == "__main__":
     main()
