@@ -15,7 +15,7 @@ personnalisée (nom de l'entreprise, et nom du contact si connu) avec le CV en p
 
   `{entreprise}` est remplacé par le nom, `{salutation}` par « Bonjour Madame X, » ou « Bonjour, ».
   La 1re ligne `Objet : ...` devient l'objet du mail.
-- **CV** : `CV_Anatoli_Mikoyan_alternance.pdf` s'il est dans ce dossier, sinon `../Cv.pdf` (ou `--cv chemin/vers/cv.pdf`).
+- **CV** : mets ton CV (PDF) dans ce dossier, il est joint automatiquement (sinon `--cv chemin/vers/cv.pdf`).
 - **`.env`** : copie `.env.exemple` et mets ton adresse + mot de passe.
   Pour Gmail, active la validation en 2 étapes puis crée un
   [mot de passe d'application](https://myaccount.google.com/apppasswords).

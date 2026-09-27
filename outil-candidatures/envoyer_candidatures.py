@@ -87,6 +87,8 @@ def rediger(modele, ligne):
         civilite=contact or "Madame, Monsieur",
         accroche=ligne.get("accroche", ""),
     )
+    if re.search(r"\[[^\]\n]{2,40}\]", texte):
+        return None, None, f"{source} contient encore des [crochets] à remplir"
     premiere, _, corps = texte.partition("\n")
     if premiere.lower().startswith("objet"):
         return premiere.split(":", 1)[1].strip(), corps.strip(), source
@@ -109,8 +111,9 @@ def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--csv", default=DOSSIER / "entreprises.csv", type=Path)
     p.add_argument("--lettre", default=DOSSIER / "lettre.txt", type=Path)
-    cv_defaut = DOSSIER / "CV_Anatoli_Mikoyan_alternance.pdf"
-    p.add_argument("--cv", default=cv_defaut if cv_defaut.exists() else DOSSIER.parent / "Cv.pdf", type=Path)
+    pdfs = sorted(DOSSIER.glob("*.pdf"))
+    p.add_argument("--cv", default=pdfs[0] if pdfs else DOSSIER.parent / "Cv.pdf", type=Path,
+                   help="CV à joindre (par défaut, le PDF présent dans ce dossier)")
     p.add_argument("--delai", default=45, type=int, help="secondes entre deux envois (défaut 45)")
     p.add_argument("--max", default=0, type=int, help="nombre max d'envois cette fois (0 = tous)")
     p.add_argument("--a-partir", metavar="'AAAA-MM-JJ HH:MM'",
