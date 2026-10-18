@@ -1,0 +1,16 @@
+Objet : Candidature alternance technicien informatique | Anatoli Mikoyan
+{salutation}
+
+{accroche}
+
+Titulaire d'un Bac Pro Systèmes Numériques puis d'un BTS SIO, je recherche une alternance de 12 mois en tant que technicien informatique. J'habite en Île-de-France, je suis véhiculé et tout à fait prêt à m'installer dans votre région pour cette alternance. Je suis disponible dès à présent. Je me permets donc de vous demander si {entreprise} pourrait accueillir un alternant.
+
+Lors de mon stage chez Bivwak!, le laboratoire d'innovation de BNP Paribas, j'ai déployé des postes Windows 10 et macOS, puis configuré des équipements audiovisuels ainsi que des mobiles professionnels. J'ai aussi installé puis sécurisé un serveur Debian. Enfin, j'ai suivi les formations Cisco ainsi que le MOOC SecNumAcadémie de l'ANSSI.
+
+Vous trouverez mon CV en pièce jointe. Je serais heureux de pouvoir échanger avec vous, par téléphone, en visioconférence ou dans vos locaux. Je vous remercie par avance de votre réponse.
+
+Je vous prie d'agréer, {civilite}, l'expression de mes salutations distinguées.
+
+Anatoli Mikoyan
+07 83 15 17 86
+anatoli.mikoyan95@gmail.com
