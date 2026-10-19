@@ -5,3 +5,4 @@ lettres/*.txt
 *.pdf
 entreprises-*.csv
 cv-corriges.log.csv
+__pycache__/
