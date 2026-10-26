@@ -1,687 +1,1137 @@
-
-    <!DOCTYPE html>
-<html lang="en">
+<!DOCTYPE html>
+<html lang="fr" data-theme="dark">
   <head>
     <meta charset="UTF-8" />
-    <meta http-equiv="X-UA-Compatible" content="IE=edge" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Anatoli Mikoyan - Développeur Web</title>
+    <title>Anatoli Mikoyan — Technicien support informatique N1/N2</title>
 
-    <!-- box icons -->
-    <link href="https://unpkg.com/boxicons@2.1.4/css/boxicons.min.css" rel="stylesheet" />
+    <meta
+      name="description"
+      content="Technicien support informatique N1/N2. BTS SIO et Bac Pro réseaux. Déploiement de postes Windows et macOS via MDM, Active Directory, Microsoft 365, GLPI. Disponible immédiatement en Île-de-France."
+    />
+    <meta name="author" content="Anatoli Mikoyan" />
+    <meta name="theme-color" content="#0a0f1c" />
 
-    <!-- custom css -->
+    <meta property="og:type" content="website" />
+    <meta property="og:locale" content="fr_FR" />
+    <meta property="og:title" content="Anatoli Mikoyan — Technicien support informatique N1/N2" />
+    <meta
+      property="og:description"
+      content="Déploiement de postes, Active Directory, Microsoft 365, GLPI et support utilisateurs. Labo Windows Server documenté. Disponible immédiatement en Île-de-France."
+    />
+    <!-- URL absolue : les aperçus LinkedIn / WhatsApp n'acceptent pas les chemins relatifs -->
+    <meta property="og:url" content="https://anatoli-mikoyan.github.io/Portfolio-Anatoli-Mikoyan/" />
+    <meta
+      property="og:image"
+      content="https://anatoli-mikoyan.github.io/Portfolio-Anatoli-Mikoyan/images/og-cover.png"
+    />
+    <meta property="og:image:width" content="1200" />
+    <meta property="og:image:height" content="630" />
+    <meta name="twitter:card" content="summary_large_image" />
+
+    <link rel="preload" href="assets/fonts/inter-latin-400-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="assets/fonts/space-grotesk-latin-700-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="assets/boxicons/fonts/boxicons.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="stylesheet" href="assets/boxicons/css/boxicons.min.css" />
     <link rel="stylesheet" href="style.css" />
   </head>
 
   <body>
-    <!-- header design -->
-     <header class="header">
-       <a href="#" class="logo">Mon Portfolio</a>
+    <script>
+      // Posé avant tout rendu : les états initiaux « invisible » ne s'appliquent
+      // que si JavaScript tourne. Sans JS, la page s'affiche entièrement.
+      document.documentElement.classList.add("js");
+    </script>
 
-       <i class='bx bx-menu' id="menu-icon"></i>
+    <div class="scroll-progress" id="progress"></div>
+    <div class="aurora" aria-hidden="true"><span></span><span></span><span></span></div>
+    <div class="grid-overlay" aria-hidden="true"></div>
 
-       <nav class="navbar">
-        <a href="#home" class="active">Menu</a>
-        <a href="#about">A propos</a>
-        <a href="#education">Éducation</a>
-        <a href="#portfolio">Projets</a>
-        <a href="#veille">Veille technologique</a>
-        <div class="dropdown">
-          <a href="#bts" class="dropdown-toggle">BTS SIO</a>
-          <ul class="submenu">
-            <li><a href="#certifications">Certifications</a></li> 
-            <li><a href="#competences">Compétences acquises</a></li>
-            <li><a href="#stages">Mes stages</a></li>
-            <li><a href="#E4ETE5"> Les épreuves E5 & E6</a></li>
-           
-          </ul>
-        </div>
-        
-        <a href="#contact">Contact</a>
-       </nav>
-     </header>
+    <!-- ====================================================== NAVIGATION -->
+    <header class="nav" id="nav">
+      <div class="wrap">
+        <a href="#home" class="logo">
+          <span class="logo-mark">AM</span>
+          <span>Anatoli<span class="grad">.</span></span>
+        </a>
 
-    <!-- home section design -->
-  <section class="home" id="home">
-    <div class="home-content">
-      <h3>Salut, Je m'appelle</h3>
-      <h1>Anatoli Mikoyan</h1>
-      <h3>Et je suis <span>Développeur Web</span></h3>
-      <p>Je te souhaite la bienvenue sur mon Portfolio et n'hésite pas à explorer mon travail et en apprendre plus  sur mon parcours !</p>
-      <div class="social-media">
-        <a href="https://github.com/Anatoli-Mikoyan" target="_blank"><i class='bx bxl-github'></i></a>
-        <a href="https://linktr.ee/anatolimikoyan?utm_source=linktree_profile_share&ltsid=c4a1150a-0bee-477b-9390-408067ce07e7" target="_blank"><i class='bx bxl-linkedin-square'></i></a>
-        <a href="https://www.instagram.com/anmk_952/?igsh=NTM0bHpqejV2ZDBl&utm_source=qr" target="_blank"><i class='bx bxl-instagram-alt'></i></a>
-        <a href="mailto:anatoli.mikoyan95@gmail.com?subject=Demande d'information&body=Bonjour,%20je%20souhaite%20obtenir%20plus%20d'informations." target="_blank"><i class='bx bxl-gmail' ></i></a>
-      </div>
-      <a href="Cv.pdf" target=_blank class="btn">Télécharger mon CV</a>
-    </div>
-<div class="home-img">
-  <img src="images/moi.jpeg" alt="">
-</div>
-    </section>
-    <!-- about section design -->
-<section class="about" id="about">
-  <div class="about-img">
-    <img src="images/moi.jpeg" alt="">
-  </div>
+        <nav class="nav-links" id="navLinks" aria-label="Navigation principale">
+          <a href="#home">Accueil</a>
+          <a href="#recherche">Ma recherche</a>
+          <a href="#profil">Profil</a>
+          <a href="#competences">Compétences</a>
+          <a href="#labo">Labo &amp; projets</a>
+          <a href="#incidents">Cas pratiques</a>
+          <a href="#parcours">Parcours</a>
+          <a href="#contact">Contact</a>
+        </nav>
 
-  <div class="about-content">
-    <h2 class="heading">A propos de <span>Moi</span></h2>
-    <h3>Développeur web</h3>
-    <p>Je m'appelle Anatoli Mikoyan et j'ai 20 ans. Actuellement, je suis en deuxième année de BTS Services Informatiques aux Organisations (SIO), option Solutions Logicielles et Applications Métiers (SLAM) au Lycée La Tournelle à La Garenne-Colombes. Durant ma formation, j'ai eu l'occasion de travailler sur plusieurs projets qui m'ont permis de mettre en pratique les compétences acquises. Ces projets, que vous pouvez découvrir dans mon portfolio illustrent mon évolution et ma capacité à relever des défis techniques variés.</p>
-  <a href="#bts" class="btn">En savoir plus sur le BTS Sio Slam</a>
-      </div>
-</section>
-
-
-
-    <!-- education section design -->
-   <section class="education" id="education">
-    <h2 class="heading">Mon <span>parcours</span> </h2>
-   <div class="education-row">
-    <div class="education-column">
-      <h3 class="title">Historique Scolaire</h3>
-      <div class="education-box">
-        
-        <div class="education-content">
-          <div class="content">
-            <div class="years"><i class='bx bxs-calendar'></i> 2021-2022 </div>
-            <h3>Bac-Pro SN</h3>
-            <p>Première en bac pro systèmes numériques
-              (Filière P-Tech), lycée La Tournelle de La
-              Garenne-Colombes</p>
-          </div>
-        </div>
-
-        <div class="education-content">
-          <div class="content">
-            <div class="years"><i class='bx bxs-calendar'></i> 2022-2023 </div>
-            <h3>Bac-Pro SN </h3>
-            <p>Terminale en bac pro systèmes numériques
-              (Filière P-Tech), lycée La Tournelle de La
-              Garenne-Colombes</p>
-          </div>
-        </div>
-
-        <div class="education-content">
-          <div class="content">
-            <div class="years"><i class='bx bxs-calendar'></i> 2023-2024 </div>
-            <h3>Bts Sio Slam</h3>
-            <p>BTS SIO SLAM (Filière P-Tech) première année, lycée La
-              Tournelle de La Garenne-Colombes</p>
-          </div>
-        </div>
-
-
-        <div class="education-content">
-          <div class="content">
-            <div class="years"><i class='bx bxs-calendar'></i> 2024-2025 </div>
-            <h3>Bts Sio Slam</h3>
-            <p>BTS SIO SLAM (Filière P-Tech) deuxième année, lycée La
-              Tournelle de La Garenne-Colombes</p>
-          </div>
+        <div class="nav-actions">
+          <button class="icon-btn theme-toggle" id="themeToggle" aria-label="Changer de thème">
+            <i class="bx bx-sun"></i><i class="bx bx-moon"></i>
+          </button>
+          <a href="Cv.pdf" target="_blank" rel="noopener" class="btn btn-primary nav-cta">
+            <i class="bx bx-download"></i> Mon CV
+          </a>
+          <button class="icon-btn" id="burger" aria-label="Ouvrir le menu" aria-expanded="false">
+            <i class="bx bx-menu"></i>
+          </button>
         </div>
       </div>
-    </div>
+    </header>
 
-    <div class="education-column">
-      <h3 class="title">Expérience Professionnelle</h3>
-      <div class="education-box">
-       
+    <main>
+      <!-- ============================================================ HERO -->
+      <section class="hero" id="home">
+        <div class="wrap hero-grid">
+          <div class="hero-content">
+            <div class="status-badge reveal">
+              <span class="pulse"></span>
+              Disponible immédiatement — Île-de-France
+            </div>
 
-        <div class="education-content">
-          <div class="content">
-            <div class="years"><i class='bx bxs-calendar'></i> 2021-2022</div>
-            <h3>Dibotec</h3>
-            <p> -Installation de matériel de vidéosurveillance <br>
-                -Intervention que incidence <br> </p>
+            <h1 class="reveal" style="--d: 60ms">Anatoli <span class="grad">Mikoyan</span></h1>
+
+            <div class="hero-role reveal" style="--d: 120ms">Je suis <span id="typed"></span></div>
+
+            <p class="lead reveal" style="--d: 180ms">
+              <strong>BTS SIO</strong> et <strong>Bac Pro Systèmes Numériques option réseaux</strong>, mention
+              bien. Chez <strong>Bivwak by BNP Paribas</strong>, j'ai déployé des masters Windows et macOS sur
+              le parc de l'entreprise, enrôlé les postes via <strong>MDM</strong> et assuré le support des
+              utilisateurs. Je qualifie un incident, je le résous ou je l'escalade proprement — et je laisse
+              une procédure derrière moi.
+            </p>
+
+            <div class="hero-actions reveal" style="--d: 240ms">
+              <a href="#labo" class="btn btn-primary"><i class="bx bx-server"></i> Voir mon labo</a>
+              <a href="Cv.pdf" target="_blank" rel="noopener" class="btn">
+                <i class="bx bxs-file-pdf"></i> Télécharger mon CV
+              </a>
+            </div>
+
+            <div class="socials reveal" style="--d: 300ms">
+              <a href="mailto:anatoli.mikoyan95@gmail.com" aria-label="Envoyer un e-mail">
+                <i class="bx bx-envelope"></i>
+              </a>
+              <a href="tel:+33783151786" aria-label="Téléphoner"><i class="bx bx-phone"></i></a>
+              <a href="https://github.com/Anatoli-Mikoyan" target="_blank" rel="noopener" aria-label="GitHub">
+                <i class="bx bxl-github"></i>
+              </a>
+              <a href="https://linktr.ee/anatolimikoyan" target="_blank" rel="noopener" aria-label="Tous mes liens">
+                <i class="bx bx-link"></i>
+              </a>
+            </div>
+          </div>
+
+          <div class="hero-visual reveal" style="--d: 160ms">
+            <div class="portrait">
+              <span class="ring" aria-hidden="true"></span>
+              <span class="ring r2" aria-hidden="true"></span>
+              <img src="images/moi.jpeg" alt="Portrait illustré d'Anatoli Mikoyan" width="330" height="330" />
+              <span class="float-chip fc1"><i class="bx bxl-windows"></i> Windows 11</span>
+              <span class="float-chip fc2"><i class="bx bx-group"></i> Active Directory</span>
+              <span class="float-chip fc3"><i class="bx bx-support"></i> GLPI</span>
+            </div>
           </div>
         </div>
 
-        <div class="education-content">
-          <div class="content">
-            <div class="years"><i class='bx bxs-calendar'></i> 2023-2024 </div>
-            <h3>Bivwak by BNP</h3>
-            <p>-Préparation et lancement d’un build Windows 10.<br>
-               -Préparation et vérification d’équipement audiovisuel.</p>
-          </div>
+        <div class="scroll-hint" aria-hidden="true"><span class="line"></span>Scroll</div>
+      </section>
+
+      <!-- ===================================================== BANDEAU OUTILS -->
+      <div class="marquee" aria-hidden="true">
+        <div class="marquee-track" id="marquee">
+          <span><i class="bx bxl-windows"></i> Windows 11 / 10</span>
+          <span><i class="bx bxl-apple"></i> macOS</span>
+          <span><i class="bx bx-mobile-alt"></i> Intune · Autopilot</span>
+          <span><i class="bx bx-group"></i> Active Directory</span>
+          <span><i class="bx bx-id-card"></i> Entra ID</span>
+          <span><i class="bx bx-envelope"></i> Microsoft 365</span>
+          <span><i class="bx bx-support"></i> GLPI</span>
+          <span><i class="bx bx-list-check"></i> ServiceNow · ITIL</span>
+          <span><i class="bx bx-desktop"></i> TeamViewer · AnyDesk</span>
+          <span><i class="bx bx-server"></i> Windows Server 2025</span>
+          <span><i class="bx bx-layer"></i> Hyper-V · Proxmox</span>
+          <span><i class="bx bx-terminal"></i> PowerShell</span>
+          <span><i class="bx bx-network-chart"></i> TCP/IP · DNS · DHCP</span>
+          <span><i class="bx bx-shield-quarter"></i> MFA · BitLocker</span>
         </div>
+      </div>
 
-
-        <div class="education-content">
-          <div class="content">
-            <div class="years"><i class='bx bxs-calendar'></i> 2024-2025 </div>
-            <h3>Développeur chez Demain-le-Printemps</h3>
-            <p>-Création d’un site web au sein d’une équipe <br>
-               -Gestion de projet en agile
+      <!-- ===================================================== MA RECHERCHE -->
+      <section id="recherche">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <span class="eyebrow"><i class="bx bx-target-lock"></i> Ma recherche</span>
+            <h2 class="section-title">Technicien support <span class="grad">N1 / N2</span></h2>
+            <p class="section-sub">
+              Ce que je cherche, en clair, pour que vous sachiez en dix secondes si mon profil correspond à
+              votre poste.
             </p>
           </div>
-        </div>
 
-        <div class="education-content">
-          <div class="content">
-            <div class="years"><i class='bx bxs-calendar'></i> 2025-2026 </div>
-            <h3>Développeur chez Demain-le-Printemps</h3>
-            <p>-Création d’un site web <br>
-              -Référencement 
+          <div class="card search-card reveal">
+            <h3>Le poste que je vise</h3>
+            <p>
+              Support utilisateurs et poste de travail, sur site ou à distance : qualification des incidents,
+              diagnostic, résolution au premier niveau, escalade documentée vers le N2 ou le N3. Je suis à
+              l'aise avec le déploiement de postes, la gestion de parc et les demandes d'accès.
             </p>
+            <div class="chip-row" style="margin-bottom: 1.5rem">
+              <span class="chip">Technicien support N1</span><span class="chip">Technicien support N2</span
+              ><span class="chip">Technicien de proximité</span><span class="chip">Technicien poste de travail</span
+              ><span class="chip">Technicien déploiement</span><span class="chip">Technicien helpdesk</span
+              ><span class="chip">Gestionnaire de parc</span>
+            </div>
+            <div class="search-list">
+              <div><dt>Démarrage</dt><dd>Immédiat</dd></div>
+              <div><dt>Zone</dt><dd>Île-de-France · Permis B, véhiculé</dd></div>
+              <div><dt>Horaires</dt><dd>Soirée, week-end et astreinte possibles</dd></div>
+              <div><dt>Mode</dt><dd>Sur site, en itinérance ou à distance</dd></div>
+            </div>
           </div>
-        </div>
-
-
-
-      </div>
-    </div>
-
-   </div>
-  </section>
-    <!-- portfolio section design -->
-<section class="portfolio" id="portfolio">
-  <h2 class="heading">Mes <span>Projets</span></h2>
-
-  <h3>En Développement Web</h3>
-
-  <div class="portfolio-container">
-    <div class="portfolio-box">
-      <img src="images/disney.png" width="200px" height="350px" alt="">
-      <div class="portfolio-layer">
-        <h4>Projet Disney-Plus</h4>
-        <a href="https://anatoli-mikoyan.github.io/MIKOYAN-ANATOLI-projet-Disney-plusFR.github.io/" target="_blank"><i class="bx bx-link-external"></i></a>
-      </div>
-    </div>
-   
-    <div class="portfolio-box">
-      <img src="images/DLP.png" height="350px" width="250px" alt="">
-      <div class="portfolio-layer">
-        <h4>Création d'un site vitrine pour une école de théatre en anglais lors d'un stage</h4>
-        <a href="https://www.tomorrow-spring.org/" target="_blank"><i class="bx bx-link-external"></i></a>
-      </div>
-    </div>
-
-    
-
-    <div class="portfolio-box">
-      <img src="images/JO2028.png" height="360px" alt="">
-      <div class="portfolio-layer">
-        <h4>Projet JO-2028 en HTML/CSS/PHP/SQL</h4>
-        <a href="http://anatoli.infinityfreeapp.com" target="_blank"><i class="bx bx-link-external"></i></a>
-      </div>
-    </div>
-
-    <div class="portfolio-box">
-      <img src="images/JAVA.webp" height="360px" alt="">
-      <div class="portfolio-layer">
-        <h4>Projet gestion carte grise en JAVA/SQL</h4>
-        <a href="cdc-technique-Anatoli-mikoyan (1).pdf" target="_blank"><i class="bx bx-link-external"></i></a>
-      </div>
-    </div>
-
-    <div class="portfolio-box">
-      <img src="images/fba.jpg" height="350px" width="250px" alt="">
-      <div class="portfolio-layer">
-        <h4>Création d'un site vitrine pour une école de théatre en russe lors d'un stage</h4>
-        <a href="https://fba.tomorrow-spring.org/index.html" target="_blank"><i class="bx bx-link-external"></i></a>
-      </div>
-    </div>
-
-  </div>
-
-
- <h3>En Réseau/Cybersécurité</h3>
-  <div class="portfolio-container">
-    
-
-    <div class="portfolio-box">
-      <img src="images/debian-12-rc.jpg" width="" height="360px" alt="">
-      <div class="portfolio-layer">
-        <h4> INSTALLATION DEBIAN 12 SUR VMWARE WORKSTATION PRO17</h4>
-        <a href="tuto-reseaux/Installation de Debian 12 sur VMware.pdf" target="_blank"><i class="bx bx-link-external"></i></a>
-      </div>
-    </div>
-    <div class="portfolio-box">
-      <img src="images/debian.png" width="" height="360px" alt="">
-      <div class="portfolio-layer">
-        <h4> Installation d’un Serveur Web Lamp sous Debian</h4>
-        <a href="tuto-reseaux/Compte rendu DebianMDF.pdf" target="_blank"><i class="bx bx-link-external"></i></a>
-      </div>
-    </div>
-      <div class="portfolio-box">
-      <img src="images/wordpress.png" width="" height="360px" alt="">
-      <div class="portfolio-layer">
-        <h4> Installation d'un CMS WordPress sur le serveur LAMP</h4>
-        <a href="tuto-reseaux/Compte_rendu_Wordpress.pdf" target="_blank"><i class="bx bx-link-external"></i></a>
-      </div>
-    </div>
-
-    <div class="portfolio-box">
-      <img src="images/centreon.jpg" width="" height="360px" alt="">
-      <div class="portfolio-layer">
-        <h4>Documentation Technique Centreon</h4>
-        <a href="tuto-reseaux/Document technique centreon.pdf" target="_blank"><i class="bx bx-link-external"></i></a>
-      </div>
-    </div>
-
-    <div class="portfolio-box">
-      <img src="images/proxmox.webp" width="" height="360px" alt="">
-      <div class="portfolio-layer">
-        <h4>Présentation de Proxmox</h4>
-        <a href="tuto-reseaux/Ossant_Mikoyan_proxmox copie.pdf" target="_blank"><i class="bx bx-link-external"></i></a>
-      </div>
-    </div>
-
-    <div class="portfolio-box">
-      <img src="images/MALLETT.png" width="" height="360px" alt="">
-      <div class="portfolio-layer">
-        <h4>PROJET: MALLET AUDIT</h4>
-        <a href="tuto-reseaux/mallet.pdf" target="_blank"><i class="bx bx-link-external"></i></a>
-      </div>
-    </div>
-
-  </div>
-
-</section>
-
- <!-- Veille-Technologique -->
-  <section class="veille" id="veille">
-    <h2 class="heading">Ma Veille <span>Technologique</span></h2>
-    <br>
-    <h4>Qu'est-ce que la Veille Technologique ?</h4>
-    <p>La veille technologique est un processus d'observation et d'analyse des évolutions et des tendances dans le domaine des technologies de l'information et de la communication. Dans le cadre d'un BTS SIO (Services Informatiques aux Organisations), la veille technologique permet aux étudiants et professionnels de rester informés des nouvelles technologies, des innovations, des produits émergents, ainsi que des évolutions réglementaires et des meilleures pratiques.</p>
-     <br> <br>
-    <h4>Les principaux outils de ma veille</h4>
-    <p>Dans le cadre de ma veille technologique, j'utilise principalement deux outils : Feedly et X (anciennement Twitter).
-      <br> <br>
-      Feedly est un agrégateur de flux RSS qui me permet de centraliser les articles et les actualités provenant de différentes sources spécialisées. En personnalisant mes catégories, je peux suivre des blogs, des sites d'actualité technologique et des publications professionnelles en un seul endroit. Cela m'aide à rester informé des dernières tendances et innovations dans le domaine des technologies de l'information. L'interface conviviale de Feedly facilite également la lecture et l'organisation des informations, ce qui rend ma veille plus efficace.
-      <br> <br>
-      D'autre part, X me permet de suivre des experts, des entreprises et des hashtags pertinents dans le secteur de la tech. Cet outil est idéal pour obtenir des mises à jour en temps réel et pour participer à des discussions autour des nouvelles technologies. Grâce aux fils de conversation et aux partages d'articles, je peux accéder à une grande variété de points de vue et de ressources, ce qui enrichit ma compréhension des sujets d'actualité.
-      <br> <br>
-      En utilisant ces deux outils, je suis en mesure de mener une veille technologique complète et dynamique, alliant contenu structuré et échanges interactifs. Cette approche me permet de rester à jour et de mieux anticiper les évolutions du secteur.</p>
-   <br> <br>
-
-   <div class="images">
-    <img src="images/feedly-rss.jpg" width="30%" alt="">
-    <img src="images/twitter.png" width="30%" alt="">
-  </div>
-   <h4>Le sujet de ma veille Technologique</h4>
-   <p>Pour ma veille technologique, j'ai choisi d'aborder le sujet de la cybersécurité, en me concentrant sur la thématique suivante : <span> <strong>Quels sont les enjeux de la cybersécurité pour la souveraineté territoriale ?</strong></span> Ce choix s'explique par l'importance croissante des menaces numériques et la nécessité d'adapter nos stratégies de protection pour garantir la sécurité des données et des infrastructures dans un monde de plus en plus connecté.</p>
-   <p>Afin de répondre a cet thématique ma veille s'est reposé sur les 2 thèmes suivant:</p>
-    <br>
-   <div class="conteneur">
-    <h4>Thème 1: La cybersécurité des infrastructures critiques</h4>
-     <div class="sous-conteneur">
-        <div class="articles">
-           <h5>Cybersécurité et infrastructures critiques : défis et solutions pour le futur</h5>
-          <span> <p>Cet article explore les menaces croissantes qui pèsent sur les infrastructures critiques comme l’énergie, les transports et la santé. Il examine les initiatives européennes, telles que la directive NIS2, et les investissements français dans la modernisation des défenses cyber. Il met en lumière des solutions comme la segmentation des réseaux et les systèmes de détection avancés.</p></span>
-            <a href="https://www.lemondeinformatique.fr/actualites/lire-a-quoi-s-attendre-en-matiere-de-cybersecurite-en-2024-92244.html" class="btn" target="_blank"><p>Source: L'atelier Numérique</p></a>
-          </div>
-
-          <div class="articles">
-            <h5>La protection des infrastructures critiques en France : entre défis et innovations</h5>
-            <span><p>Il aborde les efforts de la France pour protéger ses infrastructures critiques contre les cyberattaques, en se concentrant sur les défis spécifiques auxquels le secteur énergétique est confronté. Des initiatives telles que la mise en place du Campus Cyber et les investissements de France 2030 pour encourager les startups cyber sont mis en avant.</p></span>
-             <a href="https://www.economie.gouv.fr/strategie-nationale-acceleration-cybersecurite" class="btn" target="_blank"><p>Ministère de l’Économie</p></a>
-          </div>
-
-          <div class="articles">
-            <h5>Cybersécurité des infrastructures critiques en France : état des lieux et perspectives</h5>
-            <span><p>Cet article examine les évolutions récentes de la cybersécurité dans les infrastructures critiques françaises, notamment l'accent mis sur la collaboration entre les acteurs publics et privés. Le rôle clé des technologies émergentes et des licornes cyber est également évoqué, soulignant le besoin d'une approche proactive pour anticiper les cybermenaces.</p></span>
-             <a href="https://www.entreprises.gouv.fr/fr/actualites/france-2030/france-2030-17-nouveaux-projets-selectionnes-pour-la-cybersecurite" class="btn" target="_blank"><p>Site du gouvernement FR</p></a>
-          </div>
-     </div>
-   </div>
-
-<br> <br>
-   <div class="conteneur">
-    <h4>Thème 2: Sensibilisation et formation à la cybersécurité</h4>
-     <div class="sous-conteneur">
-    <div class="articles">
-         <h5>Cybermalveillance.gouv.fr lance le programme SensCyber</h5>
-       <span> <p>Le programme SensCyber, lancé par Cybermalveillance.gouv.fr, vise à sensibiliser les agents publics aux risques numériques. Destiné aux agents des administrations publiques, il propose des modules d'e-sensibilisation pour mieux comprendre les cyberattaques et adopter de bonnes pratiques de sécurité. Il repose sur un triptyque pédagogique : comprendre, agir et transmettre les bonnes pratiques. Cette initiative s'inscrit dans une stratégies de sécurisation des administrations françaises contre la recrudescence des cyberattaques.</p></span> 
-         <a href="https://www.cybermalveillance.gouv.fr/tous-nos-contenus/actualites/senscyber-programme-esensibilisation-cybersecurite" class="btn"target="_blank"><p>Cybermalveillance.gouv.fr</p></a>
-        </div>
-
-        <div class="articles">
-          <h5>MOOC SecNumAcadémie de l'ANSSI</h5>
-        <span>  <p>L'ANSSI (Agence nationale de la sécurité des systèmes d'information) propose un cours en ligne gratuit, le MOOC SecNumAcadémie, pour sensibiliser et former les employés des petites et moyennes entreprises (PME) ainsi que le grand public. Le programme comprend quatre modules essentiels, couvrant la sécurité des systèmes d'information, les bonnes pratiques sur Internet et la sécurisation des données personnelles. Cette formation interactive vise à rendre la cybersécurité accessible à tous.</p></span>
-          <a href="https://www.francenum.gouv.fr/formations/formez-vous-sur-internet-gratuitement-la-securite-du-numerique" class="btn" target="_blank"><p>francenum.gouv</p></a>
-         </div>
-
-         <div class="articles">
-          <h5>La formation à la sensibilisation : est-ce que ça marche ?</h5>
-          <span><p>Voici un aperçu de l'intervention de Sébastien Baron, Directeur Technique de Mimecast France, lors des Assises de la Cybersécurité 2024. Il a abordé la nécessité de repenser les campagnes de sensibilisation à la cybersécurité, indiquant que les formations actuelles, bien que bien conçues, semblent peu efficaces. Une étude interne a révélé que les initiatives de sensibilisation n'ont entraîné qu'une réduction insignifiante des incidents de cybersécurité, ce qui soulève des questions sur leur impact réel.</p></span>
-          <a href="https://www.linformaticien.com/magazine/cybersecurite/62538-la-formation-a-la-sensibilisation-est-ce-que-ca-marche.html" class="btn" target="_blank"><p>Linformaticien.com</p></a>
-         </div>
-        </div>
-   </div>
-
-
-    </section>
-
-     <!-- Veille-Technologique -->
-      <section class="presentation-bts" id="bts">
-        <h2 class="heading">Présentation du <span>BTS SIO</span></h2>
-        <h3><strong>Qu'est ce que le BTS SIO ?</strong></h3>
-        <p>Le BTS SIO (Brevet de Technicien Supérieur en Services Informatiques aux Organisations) est une formation de deux ans après le bac, axée sur l’informatique et les nouvelles technologies. Il forme des techniciens capables de répondre aux besoins des entreprises en matière de systèmes informatiques et de réseaux. Ce diplôme est très demandé dans le secteur de l’informatique, qui connaît une forte croissance.</p>
-        <center><img src="images/logo-certa.png" width="50%" alt=""></center>
-       
-        <h3>Les deux spécialités du BTS SIO :</h3>
-        <h4><strong>1. Option SISR (Solutions d’Infrastructure, Systèmes et Réseaux) :</strong></h4>
-        <ul>
-          <li>Cette spécialité est centrée sur l’administration des réseaux et des systèmes.</li>
-          <li>Les étudiants apprennent à concevoir, déployer, gérer, et sécuriser des infrastructures informatiques (réseaux, serveurs, bases de données).</li>
-          <li>Cela inclut aussi des compétences en maintenance et dépannage des équipements informatiques.</li>
-        </ul>
-        <h4><strong>2. Option SLAM (Solutions Logicielles et Applications Métiers) :</strong> </h4>
-         <ul>
-        <li>Cette spécialité est orientée vers le développement de logiciels et d’applications.</li>
-         <li>Les étudiants apprennent les langages de programmation, les bases de données, et les outils pour développer des solutions logicielles adaptées aux besoins des entreprises.</li>
-         <li>On y étudie également la gestion des projets informatiques et l’intégration des applications métiers.</li>
-        </ul>
-
-        <h3>Mon choix : SLAM</h3>
-        <p>Personnellement, j’ai choisi l’option SLAM, car je suis passionné par la programmation et le développement d’applications. J’apprécie la créativité et les défis techniques que cela implique, ainsi que la satisfaction de voir un projet aboutir.</p>
-      
-
-        <h3>BTS SIO SLAM sous le Dispositif P-TECH : Un Tremplin vers le Monde Professionnel</h3>
-         <p>Intégrer le BTS SIO SLAM au Lycée La Tournelle, c’est bénéficier d’une formation enrichie par le dispositif P-TECH, un programme innovant qui fait le lien entre la scolarité et le monde professionnel. Ce dispositif repose sur un partenariat privilégié entre l’école et de grandes entreprises telles qu’IBM, BNP Paribas, et Orange.</p>
-           <h4><strong>Tout au long de la formation, ces entreprises partenaires accompagnent les étudiants à travers diverses initiatives :</strong> </h4>
-         <ul>
-         <li><strong>Mentorat individualisé :</strong> un professionnel suit votre parcours et vous aide à construire votre projet.</li>
-         <li><strong>Conférences et ateliers professionnels : </strong> des sessions pour découvrir les métiers, comprendre les besoins des entreprises et renforcer vos compétences techniques.</li>
-         <li><strong>des soft skills : </strong> des ateliers pour améliorer vos capacités relationnelles, votre communication, et votre organisation.</li>
-         <li> <strong>Stages d’immersion :</strong> en complément des 10 semaines de stage prévues, des expériences pratiques pour renforcer votre employabilité.</li>
-        </ul>
-
-        <div class="image">
-          <img src="images/ibm.png" alt="">
-          <img src="images/bnp.jpg" alt="">
-          <img src="images/orange.png" width="20%" alt="">
         </div>
       </section>
 
+      <!-- ============================================================ STATS -->
+      <section style="padding-top: 0">
+        <div class="wrap stats">
+          <div class="card stat reveal">
+            <div class="num" data-count="7" data-suffix="">7</div>
+            <div class="label">Labos &amp; projets documentés</div>
+          </div>
+          <div class="card stat reveal" style="--d: 80ms">
+            <div class="num" data-count="3" data-suffix="">3</div>
+            <div class="label">Expériences en informatique</div>
+          </div>
+          <div class="card stat reveal" style="--d: 160ms">
+            <div class="num" data-count="2" data-suffix="">2</div>
+            <div class="label">Diplômes obtenus</div>
+          </div>
+          <div class="card stat reveal" style="--d: 240ms">
+            <div class="num" data-count="5" data-suffix=" ans">5 ans</div>
+            <div class="label">De formation technique</div>
+          </div>
+        </div>
+      </section>
 
+      <!-- =========================================================== PROFIL -->
+      <section id="profil">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <span class="eyebrow"><i class="bx bx-user"></i> Profil</span>
+            <h2 class="section-title">Qui je <span class="grad">suis</span></h2>
+          </div>
 
+          <div class="about-grid">
+            <aside class="about-facts reveal">
+              <div class="fact">
+                <i class="bx bx-map"></i>
+                <div><span class="k">Localisation</span><span class="v">Cormeilles-en-Parisis (95)</span></div>
+              </div>
+              <div class="fact">
+                <i class="bx bx-car"></i>
+                <div><span class="k">Mobilité</span><span class="v">Permis B, véhiculé · toute l'Île-de-France</span></div>
+              </div>
+              <div class="fact">
+                <i class="bx bx-time-five"></i>
+                <div><span class="k">Disponibilité</span><span class="v">Immédiate · soirée, week-end, astreinte</span></div>
+              </div>
+              <div class="fact">
+                <i class="bx bx-globe"></i>
+                <div>
+                  <span class="k">Langues</span>
+                  <span class="v">Français natif · Kurde bilingue · Anglais B1 technique · Russe notions</span>
+                </div>
+              </div>
+              <div class="fact">
+                <i class="bx bx-medal"></i>
+                <div><span class="k">En dehors du travail</span><span class="v">Jiu-jitsu brésilien · veille cybersécurité</span></div>
+              </div>
+            </aside>
 
+            <div class="about-text reveal" style="--d: 100ms">
+              <p>
+                J'ai commencé par un <strong>Bac Pro Systèmes Numériques option RISC</strong> — réseaux
+                informatiques et systèmes communicants — obtenu avec mention bien, puis un
+                <strong>BTS SIO</strong>, les deux au lycée La Tournelle dans la filière PTech, avec du
+                mentorat d'IBM, BNP Paribas et Orange. Les réseaux et le matériel d'abord, le logiciel
+                ensuite : c'est ce qui me rend utile des deux côtés d'un incident.
+              </p>
+              <p>
+                Mon expérience la plus parlante, c'est <strong>Bivwak by BNP Paribas</strong>. J'y ai déployé
+                des masters <strong>Windows et macOS</strong> sur le parc, enrôlé et configuré les postes via
+                une solution <strong>MDM</strong>, préparé des équipements mobiles et audiovisuels, et traité
+                les incidents liés au déploiement. J'ai aussi rédigé les procédures d'installation et de mise
+                en service — c'est resté ma façon de travailler.
+              </p>
+              <p>
+                Avant ça, chez <strong>Dibotec</strong>, j'installais et je câblais des systèmes de
+                vidéosurveillance chez des particuliers et des professionnels : diagnostic sur site, mise en
+                service, conseil client. On apprend vite à expliquer une panne à quelqu'un qui n'est pas
+                technicien.
+              </p>
+              <p>
+                Depuis, je continue à me former chez moi : un
+                <strong>labo Hyper-V avec un domaine Active Directory complet</strong>, de la gestion de parc
+                sous GLPI, de la supervision, un serveur Linux. Tout est documenté — vous pouvez le lire plus
+                bas.
+              </p>
 
+              <h3>Ce sur quoi on peut compter</h3>
+              <div class="soft-grid">
+                <div class="soft">
+                  <i class="bx bx-search-alt"></i>
+                  <div>
+                    <b>Diagnostic méthodique</b>
+                    <small>Je remonte du symptôme à la cause au lieu de tenter des choses au hasard.</small>
+                  </div>
+                </div>
+                <div class="soft">
+                  <i class="bx bx-chat"></i>
+                  <div>
+                    <b>Pédagogie</b>
+                    <small>Expliquer sans jargon, à un utilisateur pressé comme à un collègue.</small>
+                  </div>
+                </div>
+                <div class="soft">
+                  <i class="bx bx-book-content"></i>
+                  <div>
+                    <b>Rédaction de procédures</b>
+                    <small>Ce que j'ai résolu une fois, l'équipe peut le refaire sans moi.</small>
+                  </div>
+                </div>
+                <div class="soft">
+                  <i class="bx bx-shield"></i>
+                  <div>
+                    <b>Calme sous pression</b>
+                    <small>Un poste bloqué un lundi matin ne se règle pas en paniquant.</small>
+                  </div>
+                </div>
+                <div class="soft">
+                  <i class="bx bx-happy-heart-eyes"></i>
+                  <div>
+                    <b>Sens du service</b>
+                    <small>L'utilisateur n'est pas le problème : il est la raison du poste.</small>
+                  </div>
+                </div>
+                <div class="soft">
+                  <i class="bx bx-sort-up"></i>
+                  <div>
+                    <b>Gestion des priorités</b>
+                    <small>Savoir ce qui bloque une personne et ce qui bloque un service entier.</small>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
 
-   <!-- certification section design -->
-<section class="certification" id="certifications">
-  <h2 class="heading">Certifications <span>Obtenues</span></h2>
-  <br>
-  <div class="portfolio-container">
-    <div class="portfolio-box">
-      <img src="images/certif-ansii.png" width="200px" height="350px" alt="">
-      <div class="portfolio-layer">
-        <h4> <span class="excp">Certification MOOC de l'ANSSI</span</h4>
-        <a href="Certifications/Certification-mooc-anssi.pdf" target="_blank"><i class="bx bx-link-external"></i></a>
+      <!-- ====================================================== COMPÉTENCES -->
+      <section id="competences">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <span class="eyebrow"><i class="bx bx-wrench"></i> Compétences</span>
+            <h2 class="section-title">Ce que je sais <span class="grad">faire</span></h2>
+            <p class="section-sub">
+              Les outils et domaines que j'ai réellement pratiqués, en entreprise, en cours ou dans mon labo.
+            </p>
+          </div>
+
+          <div class="skills-grid">
+            <article class="card skill-card reveal">
+              <div class="skill-head">
+                <span class="ico-box i-blue"><i class="bx bx-desktop"></i></span>
+                <h3>Poste de travail &amp; proximité</h3>
+              </div>
+              <p>
+                Masterisation, installation et dépannage matériel comme logiciel, sur parc Windows et macOS.
+                Préparation d'équipements mobiles, imprimantes, câblage et brassage.
+              </p>
+              <div class="chip-row">
+                <span class="chip">Windows 11 / 10</span><span class="chip">macOS</span
+                ><span class="chip">Masterisation</span><span class="chip">Imprimantes</span
+                ><span class="chip">Câblage</span>
+              </div>
+            </article>
+
+            <article class="card skill-card reveal" style="--d: 70ms">
+              <div class="skill-head">
+                <span class="ico-box i-cyan"><i class="bx bx-mobile-alt"></i></span>
+                <h3>Déploiement &amp; MDM</h3>
+              </div>
+              <p>
+                Déploiement de masters sur un parc d'entreprise, enrôlement des postes et gestion de flotte via
+                une solution de gestion des appareils mobiles.
+              </p>
+              <div class="chip-row">
+                <span class="chip">Intune</span><span class="chip">Autopilot</span
+                ><span class="chip">Enrôlement</span><span class="chip">Gestion de flotte</span>
+              </div>
+            </article>
+
+            <article class="card skill-card reveal" style="--d: 140ms">
+              <div class="skill-head">
+                <span class="ico-box i-violet"><i class="bx bx-group"></i></span>
+                <h3>Identités &amp; accès</h3>
+              </div>
+              <p>
+                Création et gestion des comptes, groupes et droits, réinitialisation de mots de passe,
+                déverrouillage, stratégies de groupe appliquées aux postes.
+              </p>
+              <div class="chip-row">
+                <span class="chip">Active Directory</span><span class="chip">Entra ID</span
+                ><span class="chip">GPO</span><span class="chip">Groupes &amp; droits</span>
+              </div>
+            </article>
+
+            <article class="card skill-card reveal" style="--d: 210ms">
+              <div class="skill-head">
+                <span class="ico-box i-blue"><i class="bx bx-envelope"></i></span>
+                <h3>Microsoft 365</h3>
+              </div>
+              <p>
+                Messagerie, collaboration et partage de fichiers au quotidien : création de boîtes, partages,
+                droits d'accès, résolution des incidents de synchronisation.
+              </p>
+              <div class="chip-row">
+                <span class="chip">Outlook</span><span class="chip">Teams</span
+                ><span class="chip">OneDrive</span><span class="chip">SharePoint</span
+                ><span class="chip">Exchange Online</span>
+              </div>
+            </article>
+
+            <article class="card skill-card reveal" style="--d: 280ms">
+              <div class="skill-head">
+                <span class="ico-box i-green"><i class="bx bx-list-check"></i></span>
+                <h3>ITSM &amp; ticketing</h3>
+              </div>
+              <p>
+                Qualification et suivi des tickets, respect des délais de traitement, escalade documentée vers
+                le niveau supérieur, inventaire et suivi du parc.
+              </p>
+              <div class="chip-row">
+                <span class="chip">GLPI</span><span class="chip">ServiceNow</span
+                ><span class="chip">ITIL</span><span class="chip">SLA</span
+                ><span class="chip">Escalade</span>
+              </div>
+            </article>
+
+            <article class="card skill-card reveal" style="--d: 350ms">
+              <div class="skill-head">
+                <span class="ico-box i-cyan"><i class="bx bx-desktop"></i></span>
+                <h3>Support à distance</h3>
+              </div>
+              <p>
+                Prise en main du poste utilisateur pour diagnostiquer et corriger sans déplacement, en
+                expliquant au fur et à mesure ce que je fais.
+              </p>
+              <div class="chip-row">
+                <span class="chip">TeamViewer</span><span class="chip">AnyDesk</span
+                ><span class="chip">Assistance rapide</span>
+              </div>
+            </article>
+
+            <article class="card skill-card reveal" style="--d: 420ms">
+              <div class="skill-head">
+                <span class="ico-box i-amber"><i class="bx bx-network-chart"></i></span>
+                <h3>Réseau</h3>
+              </div>
+              <p>
+                Bases solides venues du Bac Pro réseaux : adressage, résolution de noms, attribution
+                d'adresses, segmentation et accès distant. Diagnostic en ligne de commande.
+              </p>
+              <div class="chip-row">
+                <span class="chip">TCP/IP</span><span class="chip">DNS</span><span class="chip">DHCP</span
+                ><span class="chip">VLAN</span><span class="chip">VPN</span
+                ><span class="chip">ping · tracert · ipconfig</span>
+              </div>
+            </article>
+
+            <article class="card skill-card reveal" style="--d: 490ms">
+              <div class="skill-head">
+                <span class="ico-box i-green"><i class="bx bx-shield-quarter"></i></span>
+                <h3>Sécurité</h3>
+              </div>
+              <p>
+                Hygiène de sécurité au quotidien : double authentification, chiffrement des postes,
+                sensibilisation au hameçonnage, application des bonnes pratiques de l'ANSSI.
+              </p>
+              <div class="chip-row">
+                <span class="chip">MFA</span><span class="chip">BitLocker</span
+                ><span class="chip">Phishing</span><span class="chip">Guides ANSSI</span
+                ><span class="chip">RGPD</span>
+              </div>
+            </article>
+
+            <article class="card skill-card reveal" style="--d: 560ms">
+              <div class="skill-head">
+                <span class="ico-box i-violet"><i class="bx bx-server"></i></span>
+                <h3>Systèmes &amp; virtualisation</h3>
+              </div>
+              <p>
+                Installation et administration de serveurs, création de machines virtuelles et de réseaux
+                isolés pour tester avant de toucher à un parc réel.
+              </p>
+              <div class="chip-row">
+                <span class="chip">Windows Server 2025</span><span class="chip">Hyper-V</span
+                ><span class="chip">Debian</span><span class="chip">Proxmox VE</span
+                ><span class="chip">VMware</span>
+              </div>
+            </article>
+
+            <article class="card skill-card reveal" style="--d: 630ms">
+              <div class="skill-head">
+                <span class="ico-box i-amber"><i class="bx bx-terminal"></i></span>
+                <h3>Scripts &amp; outils</h3>
+              </div>
+              <p>
+                Automatisation des tâches répétitives en PowerShell, versionnage avec Git, et assez de
+                développement pour comprendre ce qui tourne derrière les applications que je dépanne.
+              </p>
+              <div class="chip-row">
+                <span class="chip">PowerShell</span><span class="chip">Git</span
+                ><span class="chip">SQL</span><span class="chip">HTML / CSS / JS</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================== LABO & PROJETS -->
+      <section id="labo">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <span class="eyebrow"><i class="bx bx-server"></i> Labo &amp; projets</span>
+            <h2 class="section-title">Ce que j'ai <span class="grad">monté et documenté</span></h2>
+            <p class="section-sub">
+              Chaque projet est accompagné de sa documentation technique, rédigée pour être reprise par
+              quelqu'un d'autre.
+            </p>
+          </div>
+
+          <article class="card lab-featured reveal">
+            <div class="lab-body">
+              <span class="lab-tag"><i class="bx bxs-star"></i> Projet principal</span>
+              <h3>Labo d'infrastructure Windows</h3>
+              <div class="lab-sub">Hyper-V · Windows Server 2025 · Active Directory · 2026</div>
+              <p>
+                Un domaine Active Directory complet monté chez moi, sur un réseau virtuel isolé, pour
+                reproduire les situations que rencontre un technicien support et m'entraîner à les résoudre
+                sans risque.
+              </p>
+              <ul class="feature-list">
+                <li>
+                  <i class="bx bx-check-circle"></i><span>Un <strong>contrôleur de domaine Windows Server
+                  2025</strong> avec les services Active Directory, DNS et DHCP</span>
+                </li>
+                <li>
+                  <i class="bx bx-check-circle"></i><span>Un <strong>poste Windows 11</strong> joint au
+                  domaine : ouverture de session, stratégies de groupe, lecteur réseau</span>
+                </li>
+                <li>
+                  <i class="bx bx-check-circle"></i><span>Un <strong>commutateur virtuel interne</strong> et
+                  une passerelle NAT : réseau isolé de la machine hôte, adressage fixe</span>
+                </li>
+                <li>
+                  <i class="bx bx-check-circle"></i><span>Création des machines en <strong>PowerShell</strong>
+                  et point de contrôle avant chaque manipulation sensible</span>
+                </li>
+                <li>
+                  <i class="bx bx-check-circle"></i><span>Tests systématiques de connectivité puis de
+                  résolution de noms avant de valider une étape</span>
+                </li>
+              </ul>
+              <div class="chip-row">
+                <span class="chip">Hyper-V</span><span class="chip">Windows Server 2025</span
+                ><span class="chip">Active Directory</span><span class="chip">DNS</span
+                ><span class="chip">DHCP</span><span class="chip">GPO</span
+                ><span class="chip">PowerShell</span>
+              </div>
+            </div>
+            <div class="lab-media">
+              <img
+                src="images/lab-hyperv.svg"
+                alt="Schéma du labo : un hôte Hyper-V sous Windows 11 Pro héberge un contrôleur de domaine Windows Server 2025 et un poste client Windows 11, reliés par un commutateur virtuel interne et une passerelle NAT"
+                width="1280"
+                height="800"
+                loading="lazy"
+              />
+            </div>
+          </article>
+
+          <div class="labs">
+            <article class="card lab-card reveal">
+              <div class="lab-card-head">
+                <span class="ico-box i-green"><i class="bx bx-support"></i></span>
+                <h3>Gestion de parc sous GLPI</h3>
+              </div>
+              <p>
+                Inventaire du matériel, suivi des incidents et des demandes, gestion du patrimoine
+                informatique et des utilisateurs.
+              </p>
+              <div class="chip-row">
+                <span class="chip">GLPI</span><span class="chip">Inventaire</span
+                ><span class="chip">Tickets</span>
+              </div>
+              <div class="lab-links">
+                <a class="plink" href="tuto-reseaux/gestion-parc-glpi.pdf" target="_blank" rel="noopener">
+                  Documentation <i class="bx bxs-file-pdf"></i>
+                </a>
+              </div>
+            </article>
+
+            <article class="card lab-card reveal" style="--d: 70ms">
+              <div class="lab-card-head">
+                <span class="ico-box i-cyan"><i class="bx bx-line-chart"></i></span>
+                <h3>Supervision avec Centreon</h3>
+              </div>
+              <p>
+                Mise en place du monitoring d'un parc : remontée des alertes, suivi de la disponibilité des
+                équipements et documentation technique.
+              </p>
+              <div class="chip-row">
+                <span class="chip">Centreon</span><span class="chip">Supervision</span
+                ><span class="chip">Alertes</span>
+              </div>
+              <div class="lab-links">
+                <a class="plink" href="tuto-reseaux/supervision-centreon.pdf" target="_blank" rel="noopener">
+                  Documentation <i class="bx bxs-file-pdf"></i>
+                </a>
+              </div>
+            </article>
+
+            <article class="card lab-card reveal" style="--d: 140ms">
+              <div class="lab-card-head">
+                <span class="ico-box i-amber"><i class="bx bxl-tux"></i></span>
+                <h3>Serveur LAMP sous Debian 12</h3>
+              </div>
+              <p>
+                Installation et sécurisation d'un serveur web complet — Apache, MySQL, PHP — puis déploiement
+                d'un CMS WordPress par-dessus.
+              </p>
+              <div class="chip-row">
+                <span class="chip">Debian 12</span><span class="chip">Apache</span
+                ><span class="chip">MySQL</span><span class="chip">WordPress</span>
+              </div>
+              <div class="lab-links">
+                <a class="plink" href="tuto-reseaux/serveur-lamp-debian.pdf" target="_blank" rel="noopener">
+                  Serveur LAMP <i class="bx bxs-file-pdf"></i>
+                </a>
+                <a class="plink" href="tuto-reseaux/cms-wordpress.pdf" target="_blank" rel="noopener">
+                  WordPress <i class="bx bxs-file-pdf"></i>
+                </a>
+              </div>
+            </article>
+
+            <article class="card lab-card reveal" style="--d: 210ms">
+              <div class="lab-card-head">
+                <span class="ico-box i-violet"><i class="bx bx-layer"></i></span>
+                <h3>Virtualisation Proxmox VE</h3>
+              </div>
+              <p>
+                Présentation et mise en œuvre d'un hyperviseur Proxmox : création de machines virtuelles,
+                stockage et gestion des ressources.
+              </p>
+              <div class="chip-row">
+                <span class="chip">Proxmox VE</span><span class="chip">Hyperviseur</span
+                ><span class="chip">VM</span>
+              </div>
+              <div class="lab-links">
+                <a class="plink" href="tuto-reseaux/proxmox.pdf" target="_blank" rel="noopener">
+                  Documentation <i class="bx bxs-file-pdf"></i>
+                </a>
+              </div>
+            </article>
+
+            <article class="card lab-card reveal" style="--d: 280ms">
+              <div class="lab-card-head">
+                <span class="ico-box i-blue"><i class="bx bx-hdd"></i></span>
+                <h3>Debian 12 sur VMware Workstation</h3>
+              </div>
+              <p>
+                Procédure d'installation pas à pas d'un système Linux en machine virtuelle, du
+                partitionnement à la première connexion.
+              </p>
+              <div class="chip-row">
+                <span class="chip">VMware</span><span class="chip">Debian</span
+                ><span class="chip">Procédure</span>
+              </div>
+              <div class="lab-links">
+                <a class="plink" href="tuto-reseaux/debian-12-vmware.pdf" target="_blank" rel="noopener">
+                  Documentation <i class="bx bxs-file-pdf"></i>
+                </a>
+              </div>
+            </article>
+
+            <article class="card lab-card reveal" style="--d: 350ms">
+              <div class="lab-card-head">
+                <span class="ico-box i-green"><i class="bx bx-shield-quarter"></i></span>
+                <h3>Audit de sécurité</h3>
+              </div>
+              <p>
+                Audit d'un système d'information : cartographie des vulnérabilités, analyse des risques et
+                rapport de recommandations.
+              </p>
+              <div class="chip-row">
+                <span class="chip">Cybersécurité</span><span class="chip">Audit</span
+                ><span class="chip">Recommandations</span>
+              </div>
+              <div class="lab-links">
+                <a class="plink" href="tuto-reseaux/audit-securite-mallet.pdf" target="_blank" rel="noopener">
+                  Lire le rapport <i class="bx bxs-file-pdf"></i>
+                </a>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ====================================================== CAS PRATIQUES -->
+      <section id="incidents">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <span class="eyebrow"><i class="bx bx-clipboard"></i> Cas pratiques</span>
+            <h2 class="section-title">Comment je traite un <span class="grad">incident</span></h2>
+            <p class="section-sub">
+              Quatre situations courantes de support, traitées de bout en bout : ce que voit l'utilisateur, ce
+              que je vérifie, la cause réelle et ce que je fais pour que ça ne revienne pas.
+            </p>
+          </div>
+
+          <div class="disclaimer reveal">
+            <i class="bx bx-info-circle"></i>
+            <span>
+              <strong>Scénarios reproduits dans mon labo</strong>, pas des tickets d'entreprise : les noms de
+              comptes et de machines sont fictifs. Ils illustrent ma méthode de diagnostic, pas un historique
+              d'interventions réelles.
+            </span>
+          </div>
+
+          <div class="cases">
+            <article class="card case reveal">
+              <div class="case-head">
+                <span class="ico-box i-violet"><i class="bx bx-lock-alt"></i></span>
+                <div>
+                  <h3>Compte verrouillé après plusieurs tentatives</h3>
+                  <span class="case-meta">Active Directory · N1</span>
+                </div>
+              </div>
+              <dl class="steps">
+                <div class="step">
+                  <dt>Symptôme</dt>
+                  <dd>L'utilisateur ne peut plus ouvrir sa session : « votre compte a été verrouillé ».</dd>
+                </div>
+                <div class="step">
+                  <dt>Diagnostic</dt>
+                  <dd>
+                    Vérification de l'état du compte dans l'annuaire, puis lecture des journaux de sécurité du
+                    contrôleur de domaine pour identifier <b>d'où</b> viennent les échecs.
+                  </dd>
+                </div>
+                <div class="step">
+                  <dt>Cause</dt>
+                  <dd>
+                    Un ancien mot de passe encore enregistré sur son téléphone, qui retentait la connexion à
+                    la messagerie en boucle.
+                  </dd>
+                </div>
+                <div class="step ok">
+                  <dt>Résolution</dt>
+                  <dd>
+                    Déverrouillage du compte, suppression du profil de messagerie sur le mobile et
+                    reconfiguration avec le mot de passe à jour.
+                  </dd>
+                </div>
+              </dl>
+              <div class="case-note">
+                <i class="bx bx-bulb"></i>
+                <span>Déverrouiller sans chercher la source, c'est garantir que le ticket revient demain.</span>
+              </div>
+            </article>
+
+            <article class="card case reveal" style="--d: 80ms">
+              <div class="case-head">
+                <span class="ico-box i-blue"><i class="bx bx-folder-open"></i></span>
+                <div>
+                  <h3>Lecteur réseau absent sur un poste</h3>
+                  <span class="case-meta">GPO · partages · N1 / N2</span>
+                </div>
+              </div>
+              <dl class="steps">
+                <div class="step">
+                  <dt>Symptôme</dt>
+                  <dd>Un seul utilisateur ne voit plus son lecteur partagé ; ses collègues l'ont toujours.</dd>
+                </div>
+                <div class="step">
+                  <dt>Diagnostic</dt>
+                  <dd>
+                    Contrôle de l'application des stratégies de groupe sur le poste, puis test d'accès direct
+                    au partage par son chemin réseau, et vérification de la résolution de noms.
+                  </dd>
+                </div>
+                <div class="step">
+                  <dt>Cause</dt>
+                  <dd>
+                    Le poste n'appliquait plus la stratégie : il avait été sorti du groupe de sécurité ciblé
+                    lors d'un changement de service.
+                  </dd>
+                </div>
+                <div class="step ok">
+                  <dt>Résolution</dt>
+                  <dd>
+                    Remise dans le bon groupe, actualisation des stratégies, puis redémarrage pour confirmer
+                    que le montage se fait tout seul à l'ouverture de session.
+                  </dd>
+                </div>
+              </dl>
+              <div class="case-note">
+                <i class="bx bx-bulb"></i>
+                <span>« Un seul poste touché » oriente tout de suite vers le poste ou le compte, pas vers le serveur.</span>
+              </div>
+            </article>
+
+            <article class="card case reveal" style="--d: 160ms">
+              <div class="case-head">
+                <span class="ico-box i-cyan"><i class="bx bx-envelope"></i></span>
+                <div>
+                  <h3>Messagerie qui ne se connecte plus après activation du MFA</h3>
+                  <span class="case-meta">Microsoft 365 · Entra ID · N1</span>
+                </div>
+              </div>
+              <dl class="steps">
+                <div class="step">
+                  <dt>Symptôme</dt>
+                  <dd>
+                    Outlook redemande le mot de passe en boucle et le refuse, alors que la messagerie
+                    fonctionne depuis le navigateur.
+                  </dd>
+                </div>
+                <div class="step">
+                  <dt>Diagnostic</dt>
+                  <dd>
+                    Le fait que l'accès web fonctionne écarte le compte et le mot de passe : le problème est
+                    côté client. Vérification de l'état de l'inscription à la double authentification.
+                  </dd>
+                </div>
+                <div class="step">
+                  <dt>Cause</dt>
+                  <dd>
+                    Un profil créé avant l'activation du MFA, qui tentait encore une méthode d'authentification
+                    que la nouvelle stratégie n'accepte plus.
+                  </dd>
+                </div>
+                <div class="step ok">
+                  <dt>Résolution</dt>
+                  <dd>
+                    Recréation du profil, nouvelle inscription à la double authentification avec
+                    l'utilisateur, et vérification de l'envoi et de la réception.
+                  </dd>
+                </div>
+              </dl>
+              <div class="case-note">
+                <i class="bx bx-bulb"></i>
+                <span>Comparer le navigateur et le client lourd isole la panne en trente secondes.</span>
+              </div>
+            </article>
+
+            <article class="card case reveal" style="--d: 240ms">
+              <div class="case-head">
+                <span class="ico-box i-amber"><i class="bx bx-printer"></i></span>
+                <div>
+                  <h3>Imprimante réseau injoignable depuis un poste</h3>
+                  <span class="case-meta">Réseau · impression · N1</span>
+                </div>
+              </div>
+              <dl class="steps">
+                <div class="step">
+                  <dt>Symptôme</dt>
+                  <dd>Les documents partent dans la file d'attente et n'en sortent jamais.</dd>
+                </div>
+                <div class="step">
+                  <dt>Diagnostic</dt>
+                  <dd>
+                    Test de joignabilité de l'imprimante par son adresse, puis par son nom, et comparaison
+                    avec un poste voisin qui imprime correctement.
+                  </dd>
+                </div>
+                <div class="step">
+                  <dt>Cause</dt>
+                  <dd>
+                    L'imprimante avait changé d'adresse après un redémarrage : le port configuré sur le poste
+                    pointait dans le vide.
+                  </dd>
+                </div>
+                <div class="step ok">
+                  <dt>Résolution</dt>
+                  <dd>
+                    Correction du port côté poste, puis réservation de l'adresse côté serveur pour que
+                    l'imprimante garde la même à chaque redémarrage.
+                  </dd>
+                </div>
+              </dl>
+              <div class="case-note">
+                <i class="bx bx-bulb"></i>
+                <span>Le correctif durable n'est pas sur le poste : il est dans la réservation d'adresse.</span>
+              </div>
+            </article>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================= PARCOURS -->
+      <section id="parcours">
+        <div class="wrap">
+          <div class="section-head reveal">
+            <span class="eyebrow"><i class="bx bx-git-branch"></i> Parcours</span>
+            <h2 class="section-title">Formation &amp; <span class="grad">expérience</span></h2>
+          </div>
+
+          <div class="parcours-grid">
+            <div class="reveal">
+              <h3 class="col-title"><i class="bx bxs-briefcase"></i> Expérience</h3>
+              <div class="timeline">
+                <div class="tl-item current">
+                  <div class="tl-head">
+                    <span class="tl-date">2025 — 2026</span>
+                    <h3>Employé de rayon</h3>
+                  </div>
+                  <div class="tl-org">Carrefour · Val-d'Oise</div>
+                  <ul>
+                    <li>Poste tenu en parallèle de ma recherche d'emploi en informatique</li>
+                    <li>Rigueur, ponctualité et sens du service au contact direct des clients</li>
+                  </ul>
+                </div>
+
+                <div class="tl-item">
+                  <div class="tl-head">
+                    <span class="tl-date">Mars — Avr. 2023</span>
+                    <h3>Technicien informatique</h3>
+                  </div>
+                  <div class="tl-org">Bivwak by BNP Paribas · Paris</div>
+                  <ul>
+                    <li>Déploiement de masters Windows et macOS sur le parc de l'entreprise</li>
+                    <li>Enrôlement et configuration des postes via solution MDM</li>
+                    <li>Support utilisateurs et résolution des incidents liés au déploiement</li>
+                    <li>Préparation et tests d'équipements mobiles et audiovisuels</li>
+                    <li>Rédaction des procédures d'installation et de mise en service</li>
+                  </ul>
+                  <div class="chip-row">
+                    <span class="chip">Windows</span><span class="chip">macOS</span
+                    ><span class="chip">MDM</span><span class="chip">Support</span>
+                  </div>
+                </div>
+
+                <div class="tl-item">
+                  <div class="tl-head">
+                    <span class="tl-date">2022</span>
+                    <h3>Technicien terrain</h3>
+                  </div>
+                  <div class="tl-org">Dibotec · Argenteuil</div>
+                  <ul>
+                    <li>Installation, câblage et mise en service de systèmes de vidéosurveillance</li>
+                    <li>Interventions chez des particuliers et des professionnels</li>
+                    <li>Diagnostic et dépannage sur site, conseil client</li>
+                  </ul>
+                  <div class="chip-row">
+                    <span class="chip">Câblage</span><span class="chip">Vidéosurveillance</span
+                    ><span class="chip">Intervention</span>
+                  </div>
+                </div>
+
+                <div class="tl-item">
+                  <div class="tl-head">
+                    <span class="tl-date">2024 &amp; 2025</span>
+                    <h3>Développeur web — 2 missions</h3>
+                  </div>
+                  <div class="tl-org">Demain le Printemps · Paris · 5 semaines chacune</div>
+                  <ul>
+                    <li>Création de deux sites vitrines (anglais et russe) en équipe de trois</li>
+                    <li>Méthode agile avec Jira, versionnage Git, référencement et accessibilité</li>
+                  </ul>
+                  <div class="chip-row">
+                    <a class="chip" href="rapport-stage-2eme-annee.pdf" target="_blank" rel="noopener">
+                      <i class="bx bxs-file-pdf"></i> Rapport 2025
+                    </a>
+                    <a class="chip" href="rapport-stage-1ere-annee.pdf" target="_blank" rel="noopener">
+                      <i class="bx bxs-file-pdf"></i> Rapport 2024
+                    </a>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div class="reveal" style="--d: 120ms">
+              <h3 class="col-title"><i class="bx bxs-graduation"></i> Formation</h3>
+              <div class="timeline">
+                <div class="tl-item">
+                  <div class="tl-head">
+                    <span class="tl-date">2023 — 2025</span>
+                    <h3>BTS SIO</h3>
+                  </div>
+                  <div class="tl-org">
+                    Services Informatiques aux Organisations · Lycée La Tournelle, La Garenne-Colombes
+                  </div>
+                  <ul>
+                    <li>Filière PTech, mentorat IBM, BNP Paribas et Orange</li>
+                    <li>Systèmes, réseaux, bases de données et développement d'applications</li>
+                    <li>Diplôme obtenu en 2025</li>
+                  </ul>
+                </div>
+
+                <div class="tl-item">
+                  <div class="tl-head">
+                    <span class="tl-date">2021 — 2023</span>
+                    <h3>Bac Pro Systèmes Numériques — mention bien</h3>
+                  </div>
+                  <div class="tl-org">
+                    Option RISC, Réseaux Informatiques et Systèmes Communicants · même lycée, filière PTech
+                  </div>
+                  <ul>
+                    <li>Réseaux, câblage, systèmes communicants et matériel</li>
+                    <li>Les fondations que j'utilise encore à chaque diagnostic réseau</li>
+                  </ul>
+                </div>
+              </div>
+
+              <h3 class="col-title" style="margin-top: 2.5rem">
+                <i class="bx bxs-badge-check"></i> Certifications
+              </h3>
+              <div class="certs" style="grid-template-columns: 1fr">
+                <a
+                  class="card cert"
+                  href="Certifications/certification-mooc-anssi.pdf"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <span class="ico-box i-green"><i class="bx bx-shield-alt-2"></i></span>
+                  <span><b>MOOC SecNumAcadémie</b><small>ANSSI · hygiène et sécurité numérique</small></span>
+                  <i class="bx bx-link-external"></i>
+                </a>
+                <a
+                  class="card cert"
+                  href="Certifications/certification-intro-cybersecurity.pdf"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <span class="ico-box i-cyan"><i class="bx bx-lock-alt"></i></span>
+                  <span><b>Introduction to Cybersecurity</b><small>Cisco Networking Academy</small></span>
+                  <i class="bx bx-link-external"></i>
+                </a>
+                <a
+                  class="card cert"
+                  href="Certifications/certification-cybersecurity-essentials.pdf"
+                  target="_blank"
+                  rel="noopener"
+                >
+                  <span class="ico-box i-blue"><i class="bx bx-bug"></i></span>
+                  <span><b>Cybersecurity Essentials</b><small>Cisco Networking Academy</small></span>
+                  <i class="bx bx-link-external"></i>
+                </a>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- ========================================================== CONTACT -->
+      <section id="contact">
+        <div class="wrap">
+          <div class="section-head center reveal">
+            <span class="eyebrow"><i class="bx bx-send"></i> Contact</span>
+            <h2 class="section-title">On se <span class="grad">parle ?</span></h2>
+            <p class="section-sub">
+              Disponible immédiatement, mobile en Île-de-France. Je réponds sous 24 heures.
+            </p>
+          </div>
+
+          <div class="contact-grid">
+            <div class="contact-cards reveal">
+              <a class="card ccard" href="tel:+33783151786">
+                <i class="bx bx-phone ico"></i>
+                <span><span class="k">Téléphone</span><span class="v">07 83 15 17 86</span></span>
+              </a>
+              <a class="card ccard" href="mailto:anatoli.mikoyan95@gmail.com">
+                <i class="bx bx-envelope ico"></i>
+                <span><span class="k">E-mail</span><span class="v">anatoli.mikoyan95@gmail.com</span></span>
+              </a>
+              <div class="card ccard">
+                <i class="bx bx-map ico"></i>
+                <span>
+                  <span class="k">Secteur</span>
+                  <span class="v">Cormeilles-en-Parisis (95) · toute l'Île-de-France</span>
+                </span>
+              </div>
+              <div class="card ccard">
+                <i class="bx bx-time-five ico"></i>
+                <span>
+                  <span class="k">Disponibilité</span>
+                  <span class="v">Immédiate · soirée, week-end et astreinte</span>
+                </span>
+              </div>
+              <a class="card ccard" href="Cv.pdf" target="_blank" rel="noopener">
+                <i class="bx bxs-file-pdf ico"></i>
+                <span><span class="k">Curriculum vitae</span><span class="v">Télécharger le CV (PDF)</span></span>
+              </a>
+            </div>
+
+            <form class="card contact-form reveal" id="contactForm" style="--d: 100ms">
+              <div class="two-col">
+                <div class="field">
+                  <label for="cf-name">Nom</label>
+                  <input id="cf-name" name="name" type="text" placeholder="Votre nom" required />
+                </div>
+                <div class="field">
+                  <label for="cf-company">Entreprise</label>
+                  <input id="cf-company" name="company" type="text" placeholder="Votre société" />
+                </div>
+              </div>
+              <div class="field">
+                <label for="cf-subject">Objet</label>
+                <input
+                  id="cf-subject"
+                  name="subject"
+                  type="text"
+                  placeholder="Poste de technicien support N1/N2"
+                  required
+                />
+              </div>
+              <div class="field">
+                <label for="cf-message">Message</label>
+                <textarea id="cf-message" name="message" placeholder="Bonjour Anatoli, …" required></textarea>
+              </div>
+              <button type="submit" class="btn btn-primary" style="justify-content: center">
+                <i class="bx bx-paper-plane"></i> Envoyer le message
+              </button>
+              <p class="form-note">
+                Le formulaire ouvre votre logiciel de messagerie avec le message pré-rempli. Vous préférez
+                écrire directement ?
+                <a href="mailto:anatoli.mikoyan95@gmail.com" style="color: var(--cyan)">anatoli.mikoyan95@gmail.com</a>
+              </p>
+            </form>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer">
+      <div class="wrap">
+        <p>© <span id="year">2026</span> Anatoli Mikoyan — conçu et codé à la main.</p>
+        <nav class="footer-links">
+          <a href="#labo">Labo &amp; projets</a>
+          <a href="#incidents">Cas pratiques</a>
+          <a href="Cv.pdf" target="_blank" rel="noopener">CV</a>
+          <a href="https://github.com/Anatoli-Mikoyan" target="_blank" rel="noopener">GitHub</a>
+          <a href="mailto:anatoli.mikoyan95@gmail.com">Contact</a>
+        </nav>
       </div>
-    </div>
-   
-    <div class="portfolio-box">
-      <img src="Certifications/Certification-HTML-CSS-JS.jpeg" height="350px" width="250px" alt="">
-      <div class="portfolio-layer">
-        <h4><span class="excp"> Certification sur HTML/CSS/JAVASCRIPT</span></h4>
-        <a href="Certifications/Certification-HTML-CSS-JS.jpeg" target="_blank"><i class="bx bx-link-external"></i></a>
-      </div>
-    </div>
+    </footer>
 
-    
+    <a href="#home" class="to-top" id="toTop" aria-label="Remonter en haut">
+      <i class="bx bx-up-arrow-alt"></i>
+    </a>
 
-    <div class="portfolio-box">
-      <img src="images/CERTIF6SQL.png" height="360px" alt="">
-      <div class="portfolio-layer">
-        <h4> <span class="excp">Certification sur SQL</span></h4>
-        <a href="Certifications/certification sql.pdf" target="_blank"><i class="bx bx-link-external"></i></a>
-      </div>
-    </div>
-   
-    <div class="portfolio-box">
-      <img src="images/Capture d’écran 2025-01-04 195020.png" height="360px" alt="">
-      <div class="portfolio-layer">
-        <h4><span class="excp">Certification sur l'introduction à la Cybersécurité</span></h4>
-        <a href="Certifications/Introduction_to_Cybersecurity_certificate_anatoli-mikoyan95-gmail-com_0c92d718-b2ba-4a60-b871-56dfa9d7992b.pdf" target="_blank"><i class="bx bx-link-external"></i></a>
-      </div>
-    </div>
-
-    <div class="portfolio-box">
-      <img src="images/essec.png" height="360px" alt="">
-      <div class="portfolio-layer">
-        <h4> <span class="excp">Certification sur les essentiels de la Cybersécurité</span></h4>
-        <a href="Certifications/Cybersecurity_Essentials_certificate_anatoli-mikoyan95-gmail-com_3fda5f00-403a-4e32-8528-a3a97eca2914.pdf" target="_blank"><i class="bx bx-link-external"></i></a>
-      </div>
-    </div>
-
-    <div class="portfolio-box">
-      <img src="images/cloud.png" height="360px" alt="">
-      <div class="portfolio-layer">
-        <h4><span class="excp">Certification sur le Cloud</span></h4>
-        <a href="Certifications/cloud aws certif.pdf" target="_blank"><i class="bx bx-link-external"></i></a>
-      </div>
-    </div>
-  </div>
-</section>
-
-
- <!-- competences acquis section design -->
-
-
-<section class="competences" id="competences"> 
-  <h2 class="heading">Compétences <span>Acquises</span></h2>
-  
- 
-  <div class="competences-container">
-    <div class="competence-card">
-        <h3>HTML & CSS</h3>
-        <img src="images/html-csss.jpg" width="70%" alt="">
-        <p>Création et mise en forme de pages web dynamiques en utilisant HTML pour la structure et CSS pour la présentation.</p>
-    </div>
-    <div class="competence-card">
-        <h3>PHP</h3>
-        <img src="images/php_logo.png" width="80%" alt="">
-        <p>Développement de scripts backend avec PHP, gestion des bases de données et création d'applications web dynamiques.</p>
-    </div>
-    <div class="competence-card">
-        <h3>SQL</h3>
-        <img src="images/sql-database-generic.png" width="40%" alt="">
-        <p>Maîtrise des bases de données relationnelles, création et gestion de requêtes SQL pour interagir avec les données.</p>
-    </div>
-    <div class="competence-card">
-        <h3>Java</h3>
-        <img src="images/Java_Logo.svg" width="30%" alt="">
-        <p>Développement d'applications orientées objet en Java, gestion des structures de données et programmation backend.</p>
-    </div>
-    <div class="competence-card">
-        <h3>Mode Projet</h3>
-        <img src="images/methodeprj.jpg" width="75%" alt="">
-        <p>Gestion de projet en équipe avec méthodologie agile, travail en mode collaboratif pour développer des solutions logicielles.</p>
-    </div>
-    <div class="competence-card">
-        <h3>RGPD</h3>
-        <img src="images/rgpd.png" width="80%"" alt="">
-        
-        <p>Compréhension et application du Règlement Général sur la Protection des Données (RGPD) dans le développement d'applications et la gestion des données personnelles.</p>
-    </div>
-    <div class="competence-card">
-        <h3>Utilisation de Debian 12</h3>
-        <img src="images/debian-12-rc.jpg" width="70%" alt="">
-        <p>Administration d'un serveur sous Debian 12, gestion des utilisateurs et des services, sécurisation du serveur.</p>
-    </div>
-
-    <div class="competence-card">
-      <h3>Utilisation de GLPI</h3>
-      <img src="images/GLPI_Logo-color.png" width="90%" alt="">
-      <p>Utilisation de GLPI pour la gestion du parc informatique, le suivi des incidents, des demandes, et l'administration des ressources informatiques et des utilisateurs.</p>
-  </div>
-
-  <div class="competence-card">
-    <h3>Word</h3>
-    <img src="images/Microsoft_Office_Word_(2019–present).svg.png" width="55%" alt="">
-    <p>Utilisation de Microsoft Word pour la rédaction de rapports, devoirs et documents professionnels. Maîtrise des outils de mise en page et de présentation pour une présentation claire et structurée.</p>
-</div>
-</div>
-<style>
-  .custom-button {
-    display: inline-block;
-    padding: 16px 32px;
-    background: linear-gradient(135deg, #2C3E50, #4A69BD);
-    color: white;
-    text-decoration: none;
-    font-weight: bold;
-    font-size: 20px;
-    border-radius: 12px;
-    box-shadow: 0 6px 12px rgba(0, 0, 0, 0.4);
-    transition: transform 0.2s, box-shadow 0.2s;
-  }
-
-  .custom-button:hover {
-    transform: translateY(-5px);
-    box-shadow: 0 8px 16px rgba(0, 0, 0, 0.45);
-  }
-
-  .button-container {
-    text-align: center;
-    margin-top: 50px; /* Ajuste l'espacement avec la section précédente */
-    margin-bottom: 50px;
-  }
-</style>
-
-<div class="button-container">
- <center><a href="BTS SIO- Tableau de synthese - Epreuve E4 -1-ANATOLI (1).pdf" class="custom-button">Voir le tableau de synthèses</a></center> 
-</div>
-
-</section>
-
-<section class="stages" id="stages">
-  <h2 class="heading">Mes <span>stages</span></h2>
-  
-  <div class="conteneur">
-
-  <div class="stage-card">
-    <h3>Stage en tant que Développeur Web chez Demain le printemps: Juin-Juillet 2024 </h3>
-    <img src="images/Logo-Orange.png" width="55%" alt="">
-    <p>Stage de première année en tant que développeur web chez Demain le printemps, une association d'ecole de theatre Russe . J'ai travaillé sur la creation d'un site web vitrine en anglais, en utilisant des technologies telles que HTML, CSS, JavaScript. J'ai également participé à la mise en place d'outils de collaboration et à la gestion de projets.</p>
-     <a href="RAPPORT DE STAGE 1ER ANNE.pdf" target="_blank">Rapport de stage</a>
-  </div>
-  <div class="stage-card">
-    <h3>Stage de tant que Développeur Web chez Demain le printemps: Janvier-Février 2025 </h3>
-    <img src="images/Logo-Orange.png" width="55%" alt="">
-    <p>Stage en seconde année en tant que développeur web chez Demain le printemps, une association d'ecole de theatre Russe . J'ai travaillé sur la creation d'un site web vitrine en russe, en utilisant des technologies telles que HTML, CSS, JavaScript. J'ai également participé à la mise en place d'outils de collaboration, à la gestion de projets et au referencement SEO.</p>
-     <a href="RAPPORT DE STAGE 2Eme ANNE.pdf" target="_blank">Rapport de stage</a>
-   </div>
-
-  </div>
-</section>
-
-
-<section class="E4ETE5" id="E4ETE5">
-  <h1 class="heading">Les épreuves <span>E5 et E6</span></h1>
-  <br>
-  <h2>Épreuve E5 - Support et mise à disposition de services informatiques</h2>
-  <p>Cette épreuve évalue les compétences acquises dans le domaine de la conception et de la maintenance de solutions informatiques.</p>
-<br>
-  <h3>Format de l'épreuve</h3>
-  <ul>
-      <li><strong>Présentation orale</strong> : 40 minutes, dont 10 minutes pour la présentation personnelle et 30 minutes pour l'échange avec le jury.</li>
-      <li><strong>Dossier numérique</strong> : Il comprend un portfolio retraçant le parcours professionnel, les missions réalisées, et les compétences développées.</li>
-  </ul>
-<br>
-  <h3>Contenu de l'épreuve</h3>
-  <ul>
-      <li><strong>Situations professionnelles</strong> : Présentation de deux situations vécues, montrant l'analyse des besoins et les solutions proposées.</li>
-      <li><strong>Justification des choix</strong> : Explication des décisions prises lors des missions effectuées.</li>
-  </ul>
-<br>
-  <h3>Évaluation</h3>
-  <ul>
-      <li>Analyse et interprétation des besoins</li>
-      <li>Proposition de solutions techniques adaptées</li>
-      <li>Justification des choix techniques</li>
-      <li>Adaptabilité lors de l'échange avec le jury</li>
-  </ul>
-<br>
-  <h3>Conseils pour la préparation</h3>
-  <ul>
-      <li>Documenter les missions effectuées dans un journal de bord.</li>
-      <li>Préparer des supports visuels pour illustrer les propos.</li>
-      <li>Anticiper les questions du jury.</li>
-      <li>Répéter la présentation à l'oral pour être à l'aise.</li>
-  </ul>
-<br><br>
-  <h2>Épreuve E6 - Conception et développement d'applications</h2>
-  <p>L'épreuve E6 évalue les compétences en conception, développement et maintenance d'applications informatiques, en lien avec les besoins métiers.</p>
-<br>
-  <h3>Format de l'épreuve</h3>
-  <ul>
-      <li><strong>Oral de 40 minutes</strong>, dont 20 minutes pour la présentation du projet et 20 minutes pour les questions du jury.</li>
-      <li><strong>Préparation d'1h30</strong> : Analyse d'un sujet donné et proposition d'une solution.</li>
-  </ul>
-<br>
-  <h3>Contenu de l'épreuve</h3>
-  <ul>
-      <li><strong>Présentation du projet</strong> : Présentation de la solution technique, des choix effectués et de la méthodologie utilisée.</li>
-      <li><strong>Démonstration technique</strong> : Mise en valeur du projet à travers une présentation ou une démonstration pratique.</li>
-  </ul>
-<br>
-  <h3>Évaluation</h3>
-  <ul>
-      <li>Capacité à proposer une solution adaptée aux besoins exprimés.</li>
-      <li>Compétences techniques en développement et conception.</li>
-      <li>Clarté et pertinence de l'argumentation lors de l'échange avec le jury.</li>
-  </ul>
-<br>
-  <h3>Conseils pour la préparation</h3>
-  <ul>
-      <li>Préparer une présentation claire et structurée du projet.</li>
-      <li>Pratiquer une démonstration technique fluide et précise.</li>
-      <li>Réviser les notions techniques et les choix réalisés pendant le projet.</li>
-  </ul>
-</section><br>
-
-
-
-
-
-
-    <!-- contact section design -->
-  <section class="contact" id="contact">
-    <h2 class="heading">Contacte <span>Moi!</span></h2>
-
-    <form action="#">
-      <div class="input-box">
-        <input type="text" placeholder="Votre nom complet ">
-        <input type="email" placeholder="Adresse mail">
-      </div>
-    
-      <div class="input-box">
-        <input type="number" placeholder="Numéro">
-        <input type="text" placeholder="objet">
-      </div>
-      <textarea name="" id="" cols="30" rows="10" placeholder="Votre Message"></textarea>
-     <input type="submit" value="Envoyé" class="btn">
-    </form>
-  </section>
-    <!-- footer design -->
- <footer class="footer">
-  <div class="footer-text">
-    <p>Copyright &copy; 2025 by Anatoli Mikoyan | Tous Droits Réservés</p>
-  </div>
-
-  <div class="footer-iconTop">
-    <a href="#home"><i class="bx bx-up-arrow-alt"></i></a>
-  </div>
- </footer>
-
-    <!-- scroll reveal -->
-    <script src="https://unpkg.com/scrollreveal"></script>
-
-    <!-- typed js -->
-    <script src="https://cdn.jsdelivr.net/npm/typed.js@2.0.12"></script>
-
-    <!-- custom js -->
-    <script src="script.js">
-    
-
-    </script>
+    <script src="script.js"></script>
   </body>
 </html>

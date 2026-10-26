@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="utf-8" />
+    <title>CV — Anatoli Mikoyan — Technicien support informatique N1/N2</title>
+    <link rel="stylesheet" href="../assets/boxicons/css/boxicons.min.css" />
+    <style>
+      @font-face { font-family: "Inter"; font-weight: 400; src: url("../assets/fonts/inter-latin-400-normal.woff2") format("woff2"); }
+      @font-face { font-family: "Inter"; font-weight: 500; src: url("../assets/fonts/inter-latin-500-normal.woff2") format("woff2"); }
+      @font-face { font-family: "Inter"; font-weight: 600; src: url("../assets/fonts/inter-latin-600-normal.woff2") format("woff2"); }
+      @font-face { font-family: "Inter"; font-weight: 700; src: url("../assets/fonts/inter-latin-700-normal.woff2") format("woff2"); }
+      @font-face { font-family: "Space Grotesk"; font-weight: 500; src: url("../assets/fonts/space-grotesk-latin-500-normal.woff2") format("woff2"); }
+      @font-face { font-family: "Space Grotesk"; font-weight: 700; src: url("../assets/fonts/space-grotesk-latin-700-normal.woff2") format("woff2"); }
+      @font-face { font-family: "JetBrains Mono"; font-weight: 500; src: url("../assets/fonts/jetbrains-mono-latin-500-normal.woff2") format("woff2"); }
+
+      :root {
+        --ink: #11182b;
+        --ink-2: #3c4765;
+        --ink-3: #6b7694;
+        --blue: #1d4ed8;
+        --cyan: #0e7490;
+        --rule: #dde3ef;
+        --side-bg: #f3f6fb;
+      }
+
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      @page { size: A4; margin: 0; }
+
+      html, body { width: 210mm; }
+      body {
+        font-family: "Inter", sans-serif;
+        color: var(--ink);
+        font-size: 8.1pt;
+        line-height: 1.3;
+        -webkit-print-color-adjust: exact;
+        print-color-adjust: exact;
+      }
+      .page { width: 210mm; min-height: 297mm; display: flex; flex-direction: column; }
+
+      /* ============================================================ entête */
+      .head {
+        padding: 6.5mm 10mm 4.5mm;
+        background: linear-gradient(118deg, #0f1c33 0%, #15294a 50%, #0d2a38 100%);
+        color: #fff; position: relative; overflow: hidden;
+      }
+      .head::after {
+        content: ""; position: absolute; right: -30mm; top: -32mm;
+        width: 92mm; height: 92mm; border-radius: 50%;
+        background: radial-gradient(circle, rgba(59,130,246,.5), transparent 68%);
+      }
+      .head-row { display: flex; align-items: flex-end; justify-content: space-between; gap: 8mm; position: relative; }
+      h1 { font-family: "Space Grotesk", sans-serif; font-size: 20pt; font-weight: 700; letter-spacing: -.02em; line-height: 1; }
+      h1 span { color: #5ec8ec; }
+      .role { font-family: "Space Grotesk", sans-serif; font-size: 10pt; font-weight: 500; color: #c6d4ee; margin-top: 2mm; }
+      .head-meta {
+        text-align: right; font-family: "JetBrains Mono", monospace;
+        font-size: 7.2pt; color: #a3b6d6; line-height: 1.7; white-space: nowrap;
+      }
+      .head-meta b { color: #fff; font-weight: 500; }
+
+      .target {
+        margin-top: 3.2mm; position: relative; display: flex; align-items: center; gap: 3mm;
+        padding: 2.2mm 3.4mm; border-radius: 2mm;
+        background: rgba(94, 200, 236, .13); border: .35mm solid rgba(94, 200, 236, .42);
+        font-size: 8pt; font-weight: 600; color: #e9f5fd;
+      }
+      .target .dot { width: 2.2mm; height: 2.2mm; border-radius: 50%; background: #34d399; flex: none; }
+      .target em { font-style: normal; color: #5ec8ec; }
+
+      /* ============================================================= corps */
+      .body { display: flex; flex: 1; }
+      aside {
+        width: 63mm; flex: none; background: var(--side-bg);
+        padding: 3.8mm 5.2mm 2mm; border-right: .35mm solid var(--rule);
+      }
+      main { flex: 1; padding: 3.8mm 6mm 2mm; min-width: 0; }
+
+      h2 {
+        font-family: "Space Grotesk", sans-serif; font-size: 8.2pt; font-weight: 700;
+        letter-spacing: .13em; text-transform: uppercase; color: var(--blue);
+        display: flex; align-items: center; gap: 2mm; margin-bottom: 1.6mm;
+      }
+      h2::after { content: ""; flex: 1; height: .35mm; background: var(--rule); }
+      aside h2 { color: var(--ink); margin-bottom: 1.2mm; }
+      section + section { margin-top: 2.2mm; }
+
+      /* ------------------------------------------------------- contact */
+      .contact li {
+        list-style: none; display: flex; gap: 2mm; align-items: flex-start;
+        margin-bottom: .7mm; font-size: 7.8pt; color: var(--ink-2); word-break: break-word;
+      }
+      .contact i { color: var(--blue); font-size: 9.5pt; flex: none; width: 3.8mm; }
+      .contact b { color: var(--ink); font-weight: 600; }
+
+      /* --------------------------------- blocs de compétences (sidebar) */
+      .kb { margin-bottom: 1.4mm; }
+      .kb dt {
+        font-size: 7.9pt; font-weight: 700; color: var(--ink);
+        display: flex; align-items: center; gap: 1.6mm;
+      }
+      .kb dt::before {
+        content: ""; width: 1.4mm; height: 1.4mm; border-radius: 50%;
+        background: var(--cyan); flex: none;
+      }
+      .kb dd { font-size: 7.5pt; color: var(--ink-2); padding-left: 3mm; line-height: 1.33; }
+
+      /* -------------------------------------------- listes à puces sidebar */
+      .bullets li {
+        list-style: none; position: relative; padding-left: 3mm;
+        font-size: 7.8pt; color: var(--ink-2); margin-bottom: .6mm;
+      }
+      .bullets li::before {
+        content: ""; position: absolute; left: .3mm; top: 1.5mm;
+        width: 1.3mm; height: 1.3mm; border-radius: 50%; background: var(--cyan);
+      }
+      .bullets b { color: var(--ink); font-weight: 600; }
+
+      .langs { display: grid; gap: .3mm; }
+      .langs div { display: flex; justify-content: space-between; gap: 2mm; font-size: 7.6pt; color: var(--ink-2); }
+      .langs b { color: var(--ink); font-weight: 600; }
+
+      /* ------------------------------------------------------ expériences */
+      .job { margin-bottom: 2.2mm; }
+      .job:last-child { margin-bottom: 0; }
+      .job-top { display: flex; justify-content: space-between; align-items: baseline; gap: 3mm; }
+      .job-title { font-family: "Space Grotesk", sans-serif; font-size: 9pt; font-weight: 700; color: var(--ink); }
+      .job-title span { color: var(--blue); }
+      .job-when { font-family: "JetBrains Mono", monospace; font-size: 6.8pt; color: var(--ink-3); white-space: nowrap; }
+      .job-sub { font-size: 7.6pt; color: var(--ink-3); margin-bottom: .9mm; }
+      .job ul li {
+        list-style: none; position: relative; padding-left: 3mm;
+        font-size: 8pt; color: var(--ink-2); margin-bottom: .4mm;
+      }
+      .job ul li::before { content: "▸"; position: absolute; left: 0; top: -.1mm; color: var(--cyan); font-size: 7.4pt; }
+      .job ul b, .profil b { color: var(--ink); font-weight: 600; }
+
+      .stack-line { margin-top: 1.1mm; display: flex; flex-wrap: wrap; gap: 1.1mm; }
+      .tag {
+        font-family: "JetBrains Mono", monospace; font-size: 6.5pt; padding: .5mm 1.5mm;
+        border-radius: 1mm; background: #e9edf7; color: #3d4a73; border: .3mm solid #dae0ee;
+      }
+      .tag.hi { background: #e4ecfd; color: var(--blue); border-color: #cfdcfa; }
+
+      .profil { font-size: 8.1pt; color: var(--ink-2); }
+
+      /* ---------------------------------------------- projet mis en avant */
+      .flag {
+        border: .35mm solid #cfdcfa; background: #f3f7ff; border-radius: 1.6mm;
+        padding: 2mm 2.4mm; margin-bottom: 1.8mm;
+      }
+      .flag-top { display: flex; justify-content: space-between; align-items: baseline; gap: 3mm; }
+      .flag b { font-family: "Space Grotesk", sans-serif; font-size: 8.6pt; color: var(--ink); }
+      .flag .when { font-family: "JetBrains Mono", monospace; font-size: 6.6pt; color: var(--ink-3); }
+      .flag p { font-size: 7.8pt; color: var(--ink-2); margin-top: .6mm; }
+
+      .mini { display: grid; grid-template-columns: 1fr 1fr; gap: 1.2mm 4mm; }
+      .mini div { font-size: 7.7pt; color: var(--ink-2); }
+      .mini b { display: block; color: var(--ink); font-weight: 600; font-size: 8.1pt; }
+      .mini em { display: block; font-style: normal; font-family: "JetBrains Mono", monospace; font-size: 6.5pt; color: var(--cyan); }
+
+      /* --------------------------------------------------------- formation */
+      .edu { display: flex; gap: 3mm; margin-bottom: 1.5mm; }
+      .edu:last-child { margin-bottom: 0; }
+      .edu-when { font-family: "JetBrains Mono", monospace; font-size: 6.8pt; color: var(--ink-3); width: 18mm; flex: none; padding-top: .5mm; }
+      .edu b { font-family: "Space Grotesk", sans-serif; font-size: 8.6pt; color: var(--ink); }
+      .edu span { display: block; font-size: 7.4pt; color: var(--ink-3); }
+
+      /* ------------------------------------------------------- pied de page */
+      .ats {
+        margin-top: auto; padding: 1.5mm 10mm 1.8mm; border-top: .35mm solid var(--rule);
+        font-family: "JetBrains Mono", monospace; font-size: 5.7pt; color: #949db8; line-height: 1.5;
+      }
+    </style>
+  </head>
+
+  <body>
+    <div class="page">
+      <header class="head">
+        <div class="head-row">
+          <div>
+            <h1>ANATOLI <span>MIKOYAN</span></h1>
+            <div class="role">Technicien support N1 / N2 · Poste de travail &amp; déploiement</div>
+          </div>
+          <div class="head-meta">
+            <b>BTS SIO</b> — obtenu 2025<br />
+            <b>Bac Pro Systèmes Numériques</b><br />
+            option réseaux (RISC) — mention bien
+          </div>
+        </div>
+
+        <div class="target">
+          <span class="dot"></span>
+          <span>
+            <b>Recherche un poste de technicien support N1 / N2</b> — disponible
+            <em>immédiatement</em> · Île-de-France · permis B, véhiculé · soirée, week-end et
+            <em>astreinte</em> possibles
+          </span>
+        </div>
+      </header>
+
+      <div class="body">
+        <!-- ======================================================== ASIDE -->
+        <aside>
+          <section>
+            <h2>Contact</h2>
+            <ul class="contact">
+              <li><i class="bx bx-map"></i><span>Cormeilles-en-Parisis (95)<br />Permis B — véhiculé</span></li>
+              <li><i class="bx bx-phone"></i><span><b>07 83 15 17 86</b></span></li>
+              <li><i class="bx bx-envelope"></i><span>anatoli.mikoyan95@gmail.com</span></li>
+              <li>
+                <i class="bx bx-globe"></i>
+                <span><b>anatoli-mikoyan.github.io/<br />Portfolio-Anatoli-Mikoyan</b></span>
+              </li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Compétences</h2>
+            <dl>
+              <div class="kb">
+                <dt>Poste de travail</dt>
+                <dd>Windows 11/10, macOS, masterisation, dépannage matériel et logiciel, imprimantes, câblage et brassage</dd>
+              </div>
+              <div class="kb">
+                <dt>Déploiement &amp; MDM</dt>
+                <dd>Intune, enrôlement, gestion de flotte, Autopilot</dd>
+              </div>
+              <div class="kb">
+                <dt>Identités &amp; accès</dt>
+                <dd>Active Directory, Entra ID, comptes, groupes, mots de passe, GPO</dd>
+              </div>
+              <div class="kb">
+                <dt>Microsoft 365</dt>
+                <dd>Outlook, Teams, OneDrive, SharePoint, Exchange Online</dd>
+              </div>
+              <div class="kb">
+                <dt>ITSM &amp; ticketing</dt>
+                <dd>GLPI, ServiceNow, ITIL — incident, demande, escalade, SLA</dd>
+              </div>
+              <div class="kb">
+                <dt>Prise en main à distance</dt>
+                <dd>TeamViewer, AnyDesk, Assistance rapide Windows</dd>
+              </div>
+              <div class="kb">
+                <dt>Réseau</dt>
+                <dd>TCP/IP, DNS, DHCP, VLAN, VPN, ping, tracert, ipconfig</dd>
+              </div>
+              <div class="kb">
+                <dt>Sécurité</dt>
+                <dd>MFA, BitLocker, phishing, guides ANSSI, RGPD</dd>
+              </div>
+              <div class="kb">
+                <dt>Systèmes &amp; virtualisation</dt>
+                <dd>Windows Server 2025, Hyper-V, Debian, Proxmox VE, VMware</dd>
+              </div>
+              <div class="kb">
+                <dt>Scripts</dt>
+                <dd>PowerShell (bases), Git, SQL, HTML/CSS/JS</dd>
+              </div>
+            </dl>
+          </section>
+
+          <section>
+            <h2>Savoir-être</h2>
+            <ul class="bullets">
+              <li><b>Diagnostic méthodique</b> — du symptôme à la cause</li>
+              <li><b>Pédagogie</b> — expliquer sans jargon</li>
+              <li><b>Rédaction de procédures</b> réutilisables</li>
+              <li><b>Calme sous pression</b> et sens du service</li>
+            </ul>
+          </section>
+
+          <section>
+            <h2>Langues</h2>
+            <div class="langs">
+              <div><span>Français</span><b>Langue maternelle</b></div>
+              <div><span>Kurde</span><b>Bilingue</b></div>
+              <div><span>Anglais</span><b>B1, technique</b></div>
+              <div><span>Russe</span><b>Notions</b></div>
+            </div>
+            <ul class="bullets" style="margin-top: 1.4mm">
+              <li>Jiu-jitsu brésilien · veille cybersécurité · labo personnel</li>
+            </ul>
+          </section>
+
+        </aside>
+
+        <!-- ========================================================= MAIN -->
+        <main>
+          <section>
+            <h2>Profil</h2>
+            <p class="profil">
+              Technicien informatique titulaire d'un <b>BTS SIO</b> et d'un <b>Bac Pro Systèmes Numériques
+              option réseaux</b> (mention bien), avec une expérience concrète du déploiement de postes
+              <b>Windows et macOS via MDM</b> chez Bivwak by BNP Paribas, du support utilisateurs et de la
+              gestion de parc sous <b>GLPI</b>. À l'aise sur site comme à distance : je qualifie les
+              incidents, je les résous ou je les escalade proprement, et je documente mes interventions.
+              Disponible immédiatement, y compris en soirée, le week-end et en astreinte.
+            </p>
+          </section>
+
+          <section>
+            <h2>Expériences professionnelles</h2>
+
+            <article class="job">
+              <div class="job-top">
+                <div class="job-title">Technicien informatique — <span>Bivwak by BNP Paribas</span></div>
+                <div class="job-when">mars – avr. 2023 · Paris</div>
+              </div>
+              <ul>
+                <li>Déploiement de <b>masters Windows et macOS</b> sur le parc de l'entreprise</li>
+                <li>Enrôlement et configuration des postes via solution <b>MDM</b> (gestion de flotte)</li>
+                <li>Support utilisateurs et résolution des incidents liés au déploiement</li>
+                <li>Préparation et tests d'équipements mobiles et audiovisuels professionnels</li>
+                <li>Rédaction des <b>procédures</b> d'installation et de mise en service</li>
+              </ul>
+              <div class="stack-line">
+                <span class="tag hi">Windows</span><span class="tag hi">macOS</span
+                ><span class="tag hi">MDM</span><span class="tag">Masterisation</span
+                ><span class="tag">Support</span><span class="tag">Procédures</span>
+              </div>
+            </article>
+
+            <article class="job">
+              <div class="job-top">
+                <div class="job-title">Technicien terrain — <span>Dibotec</span></div>
+                <div class="job-when">2022 · Argenteuil</div>
+              </div>
+              <ul>
+                <li>
+                  Installation, <b>câblage</b> et mise en service de systèmes de vidéosurveillance chez des
+                  particuliers et des professionnels
+                </li>
+                <li>Diagnostic et dépannage sur site, conseil client</li>
+              </ul>
+              <div class="stack-line">
+                <span class="tag">Câblage</span><span class="tag">Mise en service</span
+                ><span class="tag">Diagnostic sur site</span>
+              </div>
+            </article>
+
+            <article class="job">
+              <div class="job-top">
+                <div class="job-title">Développeur web — <span>Demain le Printemps</span></div>
+                <div class="job-when">2024 et 2025 · 2 × 5 sem. · Paris</div>
+              </div>
+              <ul>
+                <li>Création de deux sites vitrines (anglais et russe) en équipe de trois</li>
+                <li>Méthode agile avec <b>Jira</b>, versionnage <b>Git</b>, référencement et accessibilité</li>
+              </ul>
+            </article>
+
+            <article class="job">
+              <div class="job-top">
+                <div class="job-title">Employé de rayon — <span>Carrefour</span></div>
+                <div class="job-when">2025 – 2026 · Val-d'Oise</div>
+              </div>
+              <ul>
+                <li>
+                  Poste tenu en parallèle de ma recherche d'emploi en informatique : rigueur, ponctualité et
+                  sens du service
+                </li>
+              </ul>
+            </article>
+          </section>
+
+          <section>
+            <h2>Projets techniques</h2>
+
+            <div class="flag">
+              <div class="flag-top">
+                <b>Labo d'infrastructure Windows sous Hyper-V</b>
+                <span class="when">2026</span>
+              </div>
+              <p>
+                <b>Windows Server 2025</b> et un poste <b>Windows 11</b> sur un réseau virtuel isolé
+                (commutateur interne, passerelle NAT). Domaine <b>Active Directory</b> avec DNS et DHCP,
+                adressage IP fixe, tests de connectivité et de résolution. Création des machines en
+                <b>PowerShell</b>, point de contrôle avant chaque manipulation.
+              </p>
+            </div>
+
+            <div class="mini">
+              <div>
+                <b>Gestion de parc GLPI</b>
+                <em>Inventaire · incidents · demandes</em>
+                Suivi du patrimoine informatique et des tickets
+              </div>
+              <div>
+                <b>Supervision Centreon</b>
+                <em>Monitoring · alertes</em>
+                Surveillance d'un parc et documentation
+              </div>
+              <div>
+                <b>Serveur LAMP sous Debian 12</b>
+                <em>Apache · MySQL · PHP · WordPress</em>
+                Installation, sécurisation et documentation
+              </div>
+              <div>
+                <b>Audit de sécurité</b>
+                <em>Cybersécurité</em>
+                Cartographie des vulnérabilités et recommandations
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h2>Formation</h2>
+            <div class="edu">
+              <div class="edu-when">2023 – 2025</div>
+              <div>
+                <b>BTS SIO — Services Informatiques aux Organisations</b>
+                <span>
+                  Lycée La Tournelle, La Garenne-Colombes · filière PTech, mentorat IBM, BNP Paribas et Orange
+                </span>
+              </div>
+            </div>
+            <div class="edu">
+              <div class="edu-when">2021 – 2023</div>
+              <div>
+                <b>Bac Pro Systèmes Numériques, option RISC — mention bien</b>
+                <span>
+                  Réseaux Informatiques et Systèmes Communicants · même lycée, filière PTech
+                </span>
+              </div>
+            </div>
+          </section>
+
+          <section>
+            <h2>Certifications</h2>
+            <div class="mini">
+              <div><b>MOOC SecNumAcadémie</b><em>ANSSI</em>Hygiène et sécurité du numérique</div>
+              <div><b>Introduction to Cybersecurity</b><em>Cisco Networking Academy</em></div>
+              <div><b>Cybersecurity Essentials</b><em>Cisco Networking Academy</em></div>
+            </div>
+          </section>
+        </main>
+      </div>
+
+      <div class="ats">
+        Technicien support informatique · helpdesk · support N1 N2 · technicien de proximité · poste de
+        travail · déploiement · masterisation · Windows 11 · Windows 10 · macOS · Active Directory · Entra ID ·
+        GPO · Intune · MDM · Autopilot · Microsoft 365 · Exchange Online · Teams · SharePoint · GLPI ·
+        ServiceNow · ITIL · SLA · TeamViewer · AnyDesk · TCP/IP · DNS · DHCP · VLAN · VPN · MFA · BitLocker ·
+        Windows Server 2025 · Hyper-V · Proxmox · VMware · Debian · PowerShell · BTS SIO · Bac Pro SN ·
+        Île-de-France
+      </div>
+    </div>
+  </body>
+</html>
